@@ -47,6 +47,9 @@ ecg_counter = 0
 selected_target_mac = None
 last_heartbeat = 0
 
+# THE FIX: Cache the physical device object to bypass DBus lookup errors
+ble_device_cache = {}
+
 def hr_callback(data):
     global current_hr, last_heartbeat
     last_heartbeat = time.time()
@@ -147,6 +150,9 @@ async def scan_and_list_devices():
     found_devices = {}
 
     def detection_callback(device, adv_data):
+        # Cache the physical object instantly
+        ble_device_cache[device.address] = device
+        
         name = device.name or adv_data.local_name or ""
         if "Polar" in name:
             found_devices[device.address] = {
@@ -155,8 +161,11 @@ async def scan_and_list_devices():
                 "rssi": adv_data.rssi if adv_data.rssi else -100
             }
 
-    async with BleakScanner(detection_callback, passive=False) as scanner:
-        await asyncio.sleep(3.0)
+    try:
+        async with BleakScanner(detection_callback, passive=False):
+            await asyncio.sleep(3.0)
+    except Exception as e:
+        logging.error(f"Radar error: {e}")
 
     targets = sorted(list(found_devices.values()), key=lambda x: x["rssi"], reverse=True)
     with open(DEVICES_FILE + ".tmp", "w") as f:
@@ -175,7 +184,7 @@ async def scan_and_list_devices():
 async def main():
     global selected_target_mac, last_heartbeat
     logging.info("Hardware Engine Online.")
-    
+        
     while True:
         if not selected_target_mac:
             await scan_and_list_devices()
@@ -183,38 +192,40 @@ async def main():
             continue
 
         try:
-            device = await BleakScanner.find_device_by_filter(lambda d, ad: d.address == selected_target_mac)
-            if not device:
-                logging.warning("Target device vanished. Returning to radar scan.")
-                selected_target_mac = None
-                continue
-
-            logging.info(f"Connecting to {device.name} [{device.address}]...")
-
-            async with PolarDevice(device) as polar:
-                logging.info("Connected! Starting standard Heart Rate + HRV engine...")
-                await polar.start_hr_stream(hr_callback)
-                await asyncio.sleep(0.5)
-                
-                logging.info("Initializing 200Hz Accelerometer stream...")
-                await polar.start_acc_stream(acc_callback, 200, 16, 8)
-                await asyncio.sleep(0.5)
-
-                logging.info("Initializing 130Hz clean ECG stream...")
-                await polar.start_ecg_stream(ecg_callback, 130, 14)
-                
-                logging.info(f"!!! TELEMETRY ACTIVE: Logging live to {LOGS_DIR} !!!\n")
-                
-                last_heartbeat = time.time()
-                
-                while time.time() - last_heartbeat < 10.0:
-                    await asyncio.sleep(1)
+            logging.info(f"Connecting to {selected_target_mac}...")
+            
+            # THE FIX: Pull the actual device object from the cache instead of asking DBus to find it
+            device = ble_device_cache.get(selected_target_mac)
+            
+            if device:
+                async with PolarDevice(device) as polar:
+                    logging.info("Connected! Starting standard Heart Rate + HRV engine...")
+                    await polar.start_hr_stream(hr_callback)
+                    await asyncio.sleep(0.5)
                     
-                logging.warning("\nConnection Dropped (Data flow stopped). Returning to Scanner...")
+                    logging.info("Initializing 200Hz Accelerometer stream...")
+                    await polar.start_acc_stream(acc_callback, 200, 16, 8)
+                    await asyncio.sleep(0.5)
+
+                    logging.info("Initializing 130Hz clean ECG stream...")
+                    await polar.start_ecg_stream(ecg_callback, 130, 14)
+                    
+                    logging.info(f"!!! TELEMETRY ACTIVE: Logging live to {LOGS_DIR} !!!\n")
+                    
+                    last_heartbeat = time.time()
+                    
+                    # Relies on the Watchdog Timer software timeout instead of the raw Bleak client attribute
+                    while time.time() - last_heartbeat < 10.0:
+                        await asyncio.sleep(1)
+                        
+                    logging.warning("\nConnection Dropped (Watchdog Timeout). Returning to Scanner...")
+                    selected_target_mac = None
+            else:
+                logging.warning("\n⚠️ Device lost from radar cache. Resetting...")
                 selected_target_mac = None
                 
         except (asyncio.TimeoutError, TimeoutError):
-            logging.warning("\n⚠️ OS DBus Timeout. Resetting radar...")
+            logging.warning("\n⚠️ BLE Timeout. Resetting radar...")
             selected_target_mac = None
             await asyncio.sleep(2)
         except Exception as e:
