@@ -1,0 +1,7 @@
+# Bluetooth Hardware Interface
+bleak>=0.21.0
+polar-python>=0.1.0  # Or the specific polar library you are using
+
+# Web Server & WebSockets
+fastapi>=0.100.0
+uvicorn>=0.23.0
