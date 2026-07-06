@@ -1,0 +1,13 @@
+# --- Core Bluetooth Low Energy Infrastructure ---
+bleak>=0.21.0
+
+# --- Asynchronous Utilities & Network Handlers ---
+async-timeout>=4.0.0; python_version < '3.11'
+dbus-fast>=1.83.0; sys_platform == 'linux'
+
+# --- Web Engine, API Routing & Live Dashboard ---
+Flask>=3.0.0
+flask-cors>=4.0.0
+
+# --- Core Data Handlers & Layout Matrices ---
+numpy>=1.22.0
