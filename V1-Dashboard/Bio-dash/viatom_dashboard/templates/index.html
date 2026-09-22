@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellue SpO2 Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col justify-between">
+
+    <header class="p-6 bg-slate-800 border-b border-slate-700 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-teal-400 tracking-wide">Wellue Monitor Panel</h1>
+            <span id="status" class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                Disconnected
+            </span>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12 flex-grow max-w-4xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl text-center">
+                <h2 class="text-lg font-medium text-slate-400 uppercase tracking-wider mb-2">Blood Oxygen (SpO2)</h2>
+                <div class="text-7xl font-extrabold text-teal-400 my-4">
+                    <span id="spo2">--</span><span class="text-3xl font-light text-slate-500">%</span>
+                </div>
+                <p class="text-sm text-slate-500">Normal range: 95% - 100%</p>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl text-center">
+                <h2 class="text-lg font-medium text-slate-400 uppercase tracking-wider mb-2">Heart Rate</h2>
+                <div class="text-7xl font-extrabold text-rose-500 my-4">
+                    <span id="hr">--</span><span class="text-3xl font-light text-slate-500"> BPM</span>
+                </div>
+                <p class="text-sm text-slate-500">Real-time pulse rate rhythm</p>
+            </div>
+
+        </div>
+
+        <div class="mt-8 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex justify-between items-center text-sm text-slate-400">
+            <div>Device Battery: <span id="battery" class="font-mono text-slate-200">--</span>%</div>
+            <div class="text-xs italic text-slate-500">Updates automatically via local BLE polling every second</div>
+        </div>
+    </main>
+
+    <footer class="p-4 bg-slate-950 text-center text-xs text-slate-600 border-t border-slate-900">
+        Local Flask Web Logger Environment
+    </footer>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
