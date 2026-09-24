@@ -56,4 +56,4 @@ A performance and reliability pass across all four dashboards. Verified on hardw
 
 ## V1
 
-The original dashboards: Polar H10 (v1 → v4 iterations), Viatom O2, SEN69C air monitor and Omni. See `V1-Dashboard/`.
+The original dashboards: Polar H10 (v1 → v4 iterations), Viatom O2, SEN69C air monitor and Omni. See `V1_Dashboard/`.
