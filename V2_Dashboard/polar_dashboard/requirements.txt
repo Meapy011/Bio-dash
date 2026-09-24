@@ -1,0 +1,5 @@
+bleak>=0.22.0
+dbus-fast>=1.83.0; sys_platform == 'linux'
+polar-python>=1.1.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
