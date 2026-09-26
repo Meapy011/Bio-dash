@@ -1,0 +1,23 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #121212; color: #e0e0e0; padding: 2rem;
+    display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0;
+}
+.container { display: flex; flex-direction: row; gap: 2rem; max-width: 1100px; width: 100%; justify-content: center; flex-wrap: wrap; }
+.left-panel { display: flex; flex-direction: column; gap: 1.5rem; width: 340px; }
+.right-panel { flex: 1; min-width: 450px; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.dashboard { background-color: #1e1e1e; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); text-align: center; }
+h1 { margin-top: 0; font-size: 1.8rem; color: #ffffff; }
+.metric-card { background: #252525; padding: 1.2rem; margin: 1rem 0; border-radius: 12px; border-left: 5px solid #444; }
+.metric-card.spo2 { border-left-color: #38bdf8; }
+.metric-card.hr { border-left-color: #f43f5e; }
+.value { font-size: 2.5rem; font-weight: bold; margin-top: 0.3rem; }
+.status { font-size: 0.9rem; color: #a3a3a3; margin-top: 1rem; }
+
+.graph-card { background-color: #1e1e1e; padding: 1.5rem; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); height: 220px; }
+.device-selector { background-color: #1e1e1e; padding: 1.5rem; border-radius: 16px; box-sizing: border-box; }
+h2 { font-size: 1.1rem; margin-top: 0; color: #ffffff; }
+.device-item { background: #252525; padding: 0.8rem; margin: 0.5rem 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+.btn { background-color: #2563eb; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.btn:hover { background-color: #1d4ed8; }

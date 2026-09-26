@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bio-Dash Live Telemetry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="/static/vendor/chart.min.js"></script>
+    <script src="/static/vendor/luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-adapter-luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-plugin-streaming.min.js"></script>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="dashboard">
+                <h1>Bio-Dash</h1>
+                <div class="metric-card spo2">
+                    <div style="color: #38bdf8; font-size: 0.85rem; font-weight: bold;">BLOOD OXYGEN</div>
+                    <div class="value" id="spo2-val">--%</div>
+                </div>
+                <div class="metric-card hr">
+                    <div style="color: #f43f5e; font-size: 0.85rem; font-weight: bold;">HEART RATE</div>
+                    <div class="value" id="hr-val">-- BPM</div>
+                </div>
+                <div id="status-val" class="status">Device Status: Initializing...</div>
+            </div>
+
+            <div class="device-selector" id="selector-panel" style="display: none;">
+                <h2>Select an O₂ Monitor</h2>
+                <div id="device-list"></div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="graph-card">
+                <canvas id="spo2Chart"></canvas>
+            </div>
+            <div class="graph-card">
+                <canvas id="hrChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
