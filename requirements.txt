@@ -1,4 +1,4 @@
 # Requirements live with each release -- install the one you're running:
-#   pip3 install -r V2.3_Dashboard/requirements.txt
-# or run V2.3_Dashboard/setup_env.sh for an isolated .venv.
--r V2.3_Dashboard/requirements.txt
+#   pip3 install -r V2.4_Dashboard/requirements.txt
+# or run V2.4_Dashboard/setup_env.sh for an isolated .venv.
+-r V2.4_Dashboard/requirements.txt
