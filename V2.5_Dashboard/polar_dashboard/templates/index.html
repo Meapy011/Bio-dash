@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polar H10 Advanced Research Lab</title>
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <script src="/static/vendor/chart.min.js"></script>
+    <script src="/static/vendor/luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-adapter-luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-plugin-streaming.min.js"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
+
+    <header class="p-4 bg-slate-800 border-b border-slate-700 shadow-md">
+        <div class="container mx-auto flex justify-between items-center max-w-7xl">
+            <div>
+                <h1 class="text-xl font-bold text-rose-500 tracking-wide">Polar H10 Biometric Lab</h1>
+                <p class="text-xs text-slate-400 mt-1">ECG (130Hz) | ACC (200Hz) | Live HRV</p>
+            </div>
+            <span id="status" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                Awaiting Data...
+            </span>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 flex-grow max-w-7xl flex flex-col gap-6">
+        
+        <div id="scanner-panel" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl w-full transition-all duration-500">
+            <h2 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-3">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                </span>
+                Scanning for Polar Units...
+            </h2>
+            <div id="device-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="text-slate-500 text-sm animate-pulse">Initializing Bluetooth Radar...</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center flex flex-col justify-center">
+                <h2 class="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Heart Rate</h2>
+                <div class="text-6xl font-extrabold text-rose-500 my-2 tracking-tight">
+                    <span id="hr-val">--</span><span class="text-2xl font-light text-slate-500 ml-2">BPM</span>
+                </div>
+            </div>
+            
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center flex flex-col justify-center">
+                <h2 class="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">ECG Potential</h2>
+                <div class="text-6xl font-extrabold text-teal-400 my-2 tracking-tight">
+                    <span id="ecg-val">0.00</span><span class="text-2xl font-light text-slate-500 ml-2">mV</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center flex flex-col justify-center">
+                <h2 class="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Autonomic Stress (RMSSD)</h2>
+                <div class="text-6xl font-extrabold text-indigo-400 my-2 tracking-tight">
+                    <span id="rmssd-val">--</span><span class="text-2xl font-light text-slate-500 ml-2">ms</span>
+                </div>
+                <div id="stress-label" class="text-xs font-bold mt-1 text-slate-500 animate-pulse">GATHERING BEATS...</div>
+            </div>
+        </div>
+
+        <!-- Bedside-monitor ECG -->
+        <div class="bg-black border border-slate-700 rounded-2xl shadow-xl w-full overflow-hidden">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 bg-zinc-950 border-b border-emerald-900/60 font-mono text-xs">
+                <span class="text-emerald-400 font-bold tracking-widest">ECG · CH1</span>
+                <span class="text-emerald-700">25 mm/s</span>
+                <button id="gain-btn" class="text-emerald-500 hover:text-emerald-300 border border-emerald-900 hover:border-emerald-600 rounded px-2 py-0.5 transition-colors" title="Cycle gain">GAIN AUTO</button>
+                <span class="text-emerald-800">0.5 Hz HPF</span>
+                <button id="beep-btn" class="ml-auto text-emerald-500 hover:text-emerald-300 border border-emerald-900 hover:border-emerald-600 rounded px-2 py-0.5 transition-colors" title="QRS beep">🔇 BEEP OFF</button>
+            </div>
+            <div class="flex flex-col sm:flex-row">
+                <div class="relative flex-grow h-56 sm:h-64">
+                    <canvas id="ecgGrid" class="absolute inset-0 w-full h-full"></canvas>
+                    <canvas id="ecgTrace" class="absolute inset-0 w-full h-full"></canvas>
+                    <div id="ecg-nosignal" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span class="font-mono text-sm font-bold tracking-[0.3em] text-emerald-400/70 border border-emerald-400/40 px-3 py-1 animate-pulse">NO SIGNAL</span>
+                    </div>
+                </div>
+                <div class="sm:w-44 flex sm:flex-col items-center justify-center gap-3 sm:gap-1 py-3 border-t sm:border-t-0 sm:border-l border-emerald-900/60 font-mono select-none">
+                    <div class="text-emerald-600 text-xs tracking-widest">HR <span class="text-emerald-800">bpm</span></div>
+                    <div id="mon-hr" class="text-6xl sm:text-7xl font-bold text-emerald-400 leading-none" style="text-shadow: 0 0 12px rgba(53,255,122,.45)">--</div>
+                    <div id="mon-heart" class="text-3xl text-emerald-400 transition-all duration-100" style="opacity:.2">♥</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl w-full">
+                <h2 class="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Chest Kinematics (mg)</h2>
+                <div class="relative h-48 w-full"><canvas id="accChart"></canvas></div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl w-full">
+                <h2 class="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Heart Rate Variability (R-R)</h2>
+                <div class="relative h-48 w-full"><canvas id="ppiChart"></canvas></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/ecg_monitor.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
