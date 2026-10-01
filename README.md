@@ -33,6 +33,20 @@ cat README.md            # full documentation for this release
 
 Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
+## Keeping data out of the repo
+
+Recordings (CSV) and Bluetooth MAC addresses don't belong in this repository. `scrub_repo.py`
+(standard-library Python) finds and removes them:
+
+```bash
+./scrub_repo.py                 # check the current files AND the full history (screenshots too, if tesseract is installed)
+./scrub_repo.py fix-files       # clean the current files, then commit as usual
+./scrub_repo.py fix-history     # rewrite all history (needs git-filter-repo; writes a backup bundle first; then force-push)
+./scrub_repo.py install-hook    # pre-commit hook: refuse commits that add CSVs or MAC addresses
+```
+
+Screenshots that show an address can't be cleaned automatically -- `check` lists them so they can be retaken.
+
 ## License
 
 Apache 2.0 -- see [`LICENSE`](LICENSE).
