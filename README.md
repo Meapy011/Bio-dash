@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.7`), so you can check out any of them.
+also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.8`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V2.7_Dashboard/`](V2.7_Dashboard) | **V2.7 (latest)** | ECG monitor follows the dashboard's slate / rose theme |
+| [`V2.8_Dashboard/`](V2.8_Dashboard) | **V2.8 (latest)** | Debug panels, radio routing, general Atmos dashboard (Mini / Sphere S4 / S5, Wi-Fi), tile trends, ECG Monitor/Classic toggle, services (`biodash.py`), keep-awake, auto-reconnect, recordings in `Documents/Bio-dash` |
+| [`V2.7_Dashboard/`](V2.7_Dashboard) | V2.7 | ECG monitor follows the dashboard's slate / rose theme |
 | [`V2.6_Dashboard/`](V2.6_Dashboard) | V2.6 | In-tree `vN-code` archive folders removed |
 | [`V2.5_Dashboard/`](V2.5_Dashboard) | V2.5 | Bedside-monitor ECG sweep for the Polar H10 |
 | [`V2.4_Dashboard/`](V2.4_Dashboard) | V2.4 | Viatom dashboard redesigned on the Polar layout |
@@ -26,7 +27,7 @@ also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.7`), so you can check out any of
 ## Quick start
 
 ```bash
-cd V2.7_Dashboard
+cd V2.8_Dashboard
 cat README.md            # full documentation for this release
 ```
 
