@@ -1,0 +1,6 @@
+# Everything needed to run all four dashboards.
+# Each dashboard folder also has its own requirements.txt if you only need one.
+-r polar_dashboard/requirements.txt
+-r nrf-sen_dashboard/requirements.txt
+-r viatom_dashboard/requirements.txt
+-r Omni-dashboard/requirements.txt

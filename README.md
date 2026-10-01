@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.6`), so you can check out any of them.
+also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.7`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V2.6_Dashboard/`](V2.6_Dashboard) | **V2.6 (latest)** | In-tree `vN-code` archive folders removed |
+| [`V2.7_Dashboard/`](V2.7_Dashboard) | **V2.7 (latest)** | ECG monitor follows the dashboard's slate / rose theme |
+| [`V2.6_Dashboard/`](V2.6_Dashboard) | V2.6 | In-tree `vN-code` archive folders removed |
 | [`V2.5_Dashboard/`](V2.5_Dashboard) | V2.5 | Bedside-monitor ECG sweep for the Polar H10 |
 | [`V2.4_Dashboard/`](V2.4_Dashboard) | V2.4 | Viatom dashboard redesigned on the Polar layout |
 | [`V2.3_Dashboard/`](V2.3_Dashboard) | V2.3 | `setup_env.sh` isolated venv; launchers use it automatically |
@@ -25,7 +26,7 @@ also tagged (`v1`, `v2`, `v2.2`, `v2.3` … `v2.6`), so you can check out any of
 ## Quick start
 
 ```bash
-cd V2.6_Dashboard
+cd V2.7_Dashboard
 cat README.md            # full documentation for this release
 ```
 
