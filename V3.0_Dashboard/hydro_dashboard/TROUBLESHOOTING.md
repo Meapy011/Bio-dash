@@ -52,13 +52,13 @@ flowchart TB
     classDef tool fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,stroke-width:2px
     classDef done fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
     classDef q fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px
-    style R1 fill:#FFFFFF,stroke:#CBD5E1
-    style R2 fill:#FFFFFF,stroke:#CBD5E1
-    style R3 fill:#FFFFFF,stroke:#CBD5E1
-    style R4 fill:#FFFFFF,stroke:#CBD5E1
-    style R5 fill:#FFFFFF,stroke:#CBD5E1
-    style R6 fill:#FFFFFF,stroke:#CBD5E1
-    style R7 fill:#FFFFFF,stroke:#CBD5E1
+    style R1 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R2 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R3 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R4 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R5 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R6 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style R7 fill:none,stroke:#CBD5E1,stroke-width:1.5px
 ```
 
 ## If it isn't working

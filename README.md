@@ -34,6 +34,10 @@ cat README.md            # full documentation for this release
 
 Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
+## How it works
+
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V3.0_Dashboard/docs/ARCHITECTURE.md`](V3.0_Dashboard/docs/ARCHITECTURE.md).
+
 ## Keeping data out of the repo
 
 Recordings (CSV) and Bluetooth MAC addresses don't belong in this repository. `scrub_repo.py`

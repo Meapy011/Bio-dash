@@ -25,7 +25,7 @@ flowchart LR
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
 ```
 
 ---
@@ -77,16 +77,16 @@ flowchart LR
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class H10,O2,ATM,HS device
     class EXT,INT radio
     class PW,VW,AW,HW,OM worker
     class PA,VA,AA,HA app
     class BR ui
     class REC store
-    style DEV fill:#FFFBEB,stroke:#F59E0B
-    style RAD fill:#F5F3FF,stroke:#8B5CF6
-    style SUITE fill:#F8FAFC,stroke:#94A3B8
+    style DEV fill:none,stroke:#F59E0B,stroke-width:1.5px
+    style RAD fill:none,stroke:#8B5CF6,stroke-width:1.5px
+    style SUITE fill:none,stroke:#94A3B8,stroke-width:1.5px
 ```
 
 - **Radio routing:** each dashboard picks a radio by its *address* (stable across reboots) from
@@ -134,14 +134,14 @@ flowchart TB
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class DEV device
     class W worker
     class S,DV,C,CFG file
     class A app
     class P ui
     class R store
-    style D fill:#F8FAFC,stroke:#94A3B8
+    style D fill:none,stroke:#94A3B8,stroke-width:1.5px
 ```
 
 - **Live data:** Polar and Atmos push over a WebSocket, Viatom and Omni over Server-Sent Events,
@@ -180,7 +180,7 @@ flowchart TD
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class START start
     class SCAN,LIST,CONN,STREAM worker
     class Q decision
@@ -239,7 +239,7 @@ flowchart TB
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class WAKE device
     class ADV device
     class FIND,CONN,MAP radio
@@ -250,10 +250,10 @@ flowchart TB
     class UNK,SKIPD warn
     class SIP store
     class GONE start
-    style S1 fill:#FFFFFF,stroke:#CBD5E1
-    style S2 fill:#FFFFFF,stroke:#CBD5E1
-    style S3 fill:#FFFFFF,stroke:#CBD5E1
-    style S4 fill:#FFFFFF,stroke:#CBD5E1
+    style S1 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style S2 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style S3 fill:none,stroke:#CBD5E1,stroke-width:1.5px
+    style S4 fill:none,stroke:#CBD5E1,stroke-width:1.5px
 ```
 
 - **Totals, charts, "today"** are computed from `_sips.csv` across all sessions, so replayed sips
@@ -292,7 +292,7 @@ flowchart TD
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class IN1,IN2 radio
     class RX,HDR,NORM,PRI worker
     class KIND,PROF decision
@@ -333,7 +333,7 @@ flowchart LR
     classDef ui fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px
     classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
     classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
-    classDef start fill:#1E293B,stroke:#0F172A,color:#F8FAFC,stroke-width:2px
+    classDef start fill:#1E293B,stroke:#94A3B8,color:#F8FAFC,stroke-width:2px
     class U start
     class L,B,R ui
     class SVC,SR,RD file
