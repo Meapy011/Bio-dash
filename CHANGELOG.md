@@ -3,7 +3,7 @@
 ## V3.0
 
 ### Sidebar and updates (all dashboards)
-- **Sidebar** replaces the crowded top bar: dashboard links with live dots, the debug panel toggle, keep-screen-on, updates and power, identical in every dashboard (`static/js/sidebar.js`, which replaces `nav.js` and `power.js`). Open by default on wide screens, a drawer on phones; the header keeps the title and connection status.
+- **Sidebar** replaces the crowded top bar: dashboard links with live dots, the debug panel toggle, keep-screen-on, updates and power, identical in every dashboard (`static/js/sidebar.js`, which replaces `nav.js` and `power.js`). Closed when a page opens (☰ opens it; a drawer on phones); dashboards are listed in port order; the header keeps the title and connection status.
 - **Update checker** (`updater.py`, sidebar **Updates**): *Check for updates* looks at GitHub and offers **Apply patch** (new commits for this version: pull, refresh `.venv` if needed, restart the services) and, separately, **Upgrade to Vx.y** (a newer release folder: pull, build its `.venv`, carry settings across, re-point the services, restart; the old folder is kept). Fast-forward only; refuses on local edits or a diverged branch. Same access rule as shutdown / reboot.
 - **Shutdown / reboot** moved from the debug panel to the sidebar's **Power** section.
 - **`.gitignore`** for `__pycache__`, `.venv` and the files the dashboards write while running, so a clone stays clean and updatable.

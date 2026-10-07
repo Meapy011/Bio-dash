@@ -4,13 +4,14 @@
 //   Updates     check GitHub, apply a patch (same version) or upgrade (new version)
 //   Power       reboot / shut down this computer
 // Same file in every dashboard. It builds its own markup and styles, so a template only
-// needs to load it. Open by default on wide screens, a slide-over drawer on narrow ones.
+// needs to load it. Closed when a page opens; ☰ in the header opens it (beside the page on
+// wide screens, as a slide-over drawer on narrow ones).
 (() => {
-    const DASHBOARDS = [
-        { name: 'Polar H10', port: 5001, color: '#f43f5e' },
-        { name: 'Viatom O2', port: 5003, color: '#38bdf8' },
-        { name: 'Atmos',     port: 5002, color: '#34d399' },
+    const DASHBOARDS = [                                  // listed in port order
         { name: 'Omni',      port: 5000, color: '#818cf8' },
+        { name: 'Polar H10', port: 5001, color: '#f43f5e' },
+        { name: 'Atmos',     port: 5002, color: '#34d399' },
+        { name: 'Viatom O2', port: 5003, color: '#38bdf8' },
         { name: 'Hydro',     port: 5004, color: '#22d3ee' },
     ];
     const here = parseInt(location.port || (location.protocol === 'https:' ? '443' : '80'));
@@ -88,10 +89,7 @@
     document.body.append(sb, shade);
 
     const wide = () => window.matchMedia('(min-width:1024px)').matches;
-    const setOpen = (open, remember = true) => {
-        document.body.classList.toggle('sb-open', open);
-        if (remember && wide()) store.set('biodash-sidebar', open ? '1' : '0');
-    };
+    const setOpen = (open) => document.body.classList.toggle('sb-open', open);
     // the button that brings the menu back sits at the left of the page header
     const opener = document.createElement('button');
     opener.id = 'sb-open';
@@ -104,9 +102,9 @@
     else { opener.style.cssText = 'position:fixed;top:10px;left:10px;z-index:38'; document.body.append(opener); }
     opener.addEventListener('click', () => setOpen(true));
     sb.querySelector('#sb-close').addEventListener('click', () => setOpen(false));
-    shade.addEventListener('click', () => setOpen(false, false));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !wide()) setOpen(false, false); });
-    setOpen(wide() && store.get('biodash-sidebar') !== '0', false);
+    shade.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !wide()) setOpen(false); });
+    setOpen(false);                                       // every page opens with the menu closed
 
     // ---------------------------------------------------------------- dashboards
     const nav = sb.querySelector('#sb-nav');
@@ -142,7 +140,7 @@
             b.classList.toggle('on', !!on);
             b.innerHTML = `<span class="sb-ico">🐞</span>Debug panel<span class="sb-tag">${on ? 'on' : 'D'}</span>`;
         };
-        b.addEventListener('click', () => { dbgBtn.click(); if (!wide()) setOpen(false, false); });
+        b.addEventListener('click', () => { dbgBtn.click(); if (!wide()) setOpen(false); });
         if (dbgPanel) new MutationObserver(paint).observe(dbgPanel, { attributes: true, attributeFilter: ['class'] });
         paint();
         view.append(b);

@@ -312,12 +312,12 @@ Run dashboards in the background, optionally from boot, without keeping a termin
 
 Everything that used to sit in the top bar lives in a sidebar, the same in every dashboard:
 
-- **Dashboards:** links to the other four, with a green dot for each one that's running.
+- **Dashboards:** links to the other four in port order, with a green dot for each one that's running.
 - **View:** the 🐞 debug panel (still **D**) and **☀ Keep screen on**.
 - **Updates** and **Power:** see the next two sections.
 
-It's open by default on wide screens (**«** hides it, **☰** brings it back; the choice is
-remembered) and a slide-over drawer on phones and narrow windows. The header keeps only the
+It's closed when a page opens: **☰** in the header opens it (beside the page on wide screens,
+as a slide-over drawer on phones and narrow windows) and **«** hides it again. The header keeps only the
 dashboard's title and its connection status.
 
 ### Updates (sidebar)
