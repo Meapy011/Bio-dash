@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V2.8_Dashboard/`](V2.8_Dashboard) | **V2.8 (latest)** | Debug panels, radio routing, general Atmos dashboard (Mini / Sphere S4 / S5, Wi-Fi), tile trends, ECG Monitor/Classic toggle, services (`biodash.py`), keep-awake, auto-reconnect, recordings in `Documents/Bio-dash` |
+| [`V3.0_Dashboard/`](V3.0_Dashboard) | **V3.0 (latest)** | Hydro-dash for the HidrateSpark PRO 2 (new, still being tested), overnight SpO₂ report, shutdown / reboot buttons, architecture diagrams |
+| [`V2.8_Dashboard/`](V2.8_Dashboard) | V2.8 | Debug panels, radio routing, general Atmos dashboard (Mini / Sphere S4 / S5, Wi-Fi), tile trends, ECG Monitor/Classic toggle, services (`biodash.py`), keep-awake, auto-reconnect, recordings in `Documents/Bio-dash` |
 | [`V2.7_Dashboard/`](V2.7_Dashboard) | V2.7 | ECG monitor follows the dashboard's slate / rose theme |
 | [`V2.6_Dashboard/`](V2.6_Dashboard) | V2.6 | In-tree `vN-code` archive folders removed |
 | [`V2.5_Dashboard/`](V2.5_Dashboard) | V2.5 | Bedside-monitor ECG sweep for the Polar H10 |
@@ -27,7 +28,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`), so you can check out any 
 ## Quick start
 
 ```bash
-cd V2.8_Dashboard
+cd V3.0_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -46,6 +47,12 @@ Recordings (CSV) and Bluetooth MAC addresses don't belong in this repository. `s
 ```
 
 Screenshots that show an address can't be cleaned automatically -- `check` lists them so they can be retaken.
+
+## Acknowledgements
+
+Bio-dash started from **[klei22/viatom-ble](https://github.com/klei22/viatom-ble)** (a fork of
+[ecostech/viatom-ble](https://github.com/ecostech/viatom-ble), MIT), the Python script for reading
+Viatom / Wellue oximeters over Bluetooth that kicked off these dashboards. Thank you!
 
 ## License
 

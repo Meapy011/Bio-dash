@@ -110,3 +110,9 @@ Tailwind CSS is compiled, so it only contains classes that already appear in `te
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
+
+## Acknowledgements
+
+Bio-dash started from **[klei22/viatom-ble](https://github.com/klei22/viatom-ble)** (a fork of
+[ecostech/viatom-ble](https://github.com/ecostech/viatom-ble), MIT), the Python script for reading
+Viatom / Wellue oximeters over Bluetooth that kicked off these dashboards. Thank you!
