@@ -1,4 +1,4 @@
 # Requirements live with each release -- install the one you're running:
-#   pip3 install -r V3.1_Dashboard/requirements.txt
-# or run V3.1_Dashboard/setup_env.sh for an isolated .venv.
--r V3.1_Dashboard/requirements.txt
+#   pip3 install -r V5.0_Dashboard/requirements.txt
+# or run V5.0_Dashboard/setup_env.sh for an isolated .venv.
+-r V5.0_Dashboard/requirements.txt
