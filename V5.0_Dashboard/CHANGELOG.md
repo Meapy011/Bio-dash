@@ -30,6 +30,12 @@ the other dashboards save and talks to no device. (No V4: four is an unlucky num
   checks the resampling against values worked out by hand.
 - Sidebar, services menu (`./biodash.py`), `./launch.sh analysis` and the root requirements know
   the sixth dashboard.
+- **Power-cut protection for recordings** (all dashboards): recordings are pushed onto the disk
+  every 10 s (`BIODASH_FSYNC_S`), so a cut costs at most that much; on start, each dashboard removes
+  the zero (NUL) bytes a cut can leave at the end of a recent recording; the analysis dashboard and
+  `tools/night_report.py` read past them. (Found on a real night's SpO₂ recording, where they
+  stopped the analysis page from loading.)
+- The analysis page shows the actual error when something goes wrong, instead of "request failed (500)".
 
 ## V3.1
 

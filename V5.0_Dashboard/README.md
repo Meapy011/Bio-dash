@@ -336,6 +336,11 @@ Every dashboard saves its data to your **Documents** folder, organised by dashbo
   - Each debug panel (**D**) shows **Saving to**, the folder the current session is recording into.
   - Trend history and chart pre-fill read from the newest recording of the connected device.
 - **Nothing is written inside the repo any more**, so recordings (including health data) can't be committed by accident. Logs from before this change stay in the old `logs_*` folders.
+- **Power cuts:**
+  - Recordings are pushed onto the disk every 10 seconds, so pulling the plug costs at most the last 10 seconds (`BIODASH_FSYNC_S` changes the interval).
+  - A cut while a file is being written can leave a run of zero bytes at its end. When a dashboard starts, it removes those from its recordings of the last three days (a file still being written is left alone), and prints which files it repaired.
+  - The analysis dashboard and the overnight report read past such zeros anyway.
+  - Shutting down from the sidebar, or stopping the dashboards first, avoids it altogether.
 
 ### Running as a service (`biodash.py`)
 

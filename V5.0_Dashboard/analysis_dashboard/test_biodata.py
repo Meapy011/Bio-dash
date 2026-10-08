@@ -102,4 +102,28 @@ with tempfile.TemporaryDirectory() as root:
     check("CSV rows", rows, 3)
     check("CSV values", lines[1].split(",")[2:], ["60", "2"])
 
+# power-cut protection in the shared recorder (bt_debug.py, the same file in every dashboard)
+import time
+import bt_debug
+with tempfile.TemporaryDirectory() as root:
+    os.environ["BIODASH_DATA_DIR"] = root
+    d = os.path.join(root, "Omni", "Band-WU 0347", "2026-10-06")
+    os.makedirs(d)
+    bad, fresh = os.path.join(d, "23-30-52_vitals.csv"), os.path.join(d, "23-59-00_vitals.csv")
+    for p in (bad, fresh):
+        open(p, "wb").write(b"Timestamp_Epoch_ms,SpO2_pct\n1000,97\n" + b"\0" * 273)
+    old = time.time() - 3600
+    os.utime(bad, (old, old))                       # fresh stays "being written": left alone
+    fixed = bt_debug.repair_recordings("Omni", log=lambda m: None)
+    check("repair: only the finished file", [os.path.basename(p) for p, _ in fixed], ["23-30-52_vitals.csv"])
+    check("repair: zeros removed, readings kept", open(bad, "rb").read(), b"Timestamp_Epoch_ms,SpO2_pct\n1000,97\n")
+    check("repair: active file untouched", open(fresh, "rb").read().count(b"\0"), 273)
+    s = bt_debug.SessionFiles("Omni", repair=False)
+    s.start("Band-WU 0347", None, {"vitals": ["Timestamp_Epoch_ms", "SpO2_pct"]})
+    s._synced = 0
+    s.writerows("vitals", [(2000, 96)])              # due for a sync: written to disk now, not just buffered
+    check("sync after writing", open(s.paths["vitals"]).read().splitlines()[-1], "2000,96")
+    s.close()
+    del os.environ["BIODASH_DATA_DIR"]
+
 print(f"{ok} checks passed")
