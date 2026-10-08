@@ -6,7 +6,7 @@
                                              to find the one with HidrateSpark services
     python3 hydro_test.py dump <address|name>     services, characteristics, and every readable value
     python3 hydro_test.py listen <address|name>   handshake + drain, then print every notification live
-(Use the bottle's name, e.g. h2o00003095 -- its address rotates every few minutes.)
+(Use the bottle's name, e.g. h2o00001234 -- its address rotates every few minutes.)
 Options: --seconds N (listen time, default 60) · --no-handshake · --adapter hciN
 
 Stop Hydro-dash first (the bottle accepts one connection), and turn off Bluetooth on your phone.
@@ -45,7 +45,7 @@ MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$")
 
 
 async def resolve(target, adapter=None, timeout=25.0):
-    """An address, or a name like h2o00003095: wait for it to advertise and return the device
+    """An address, or a name like h2o00001234: wait for it to advertise and return the device
     right away. Bottles rotate their address every few minutes, so the name is the stable handle,
     and connecting the moment it's seen beats BlueZ forgetting it again."""
     if MAC_RE.match(target):
@@ -62,7 +62,7 @@ async def resolve(target, adapter=None, timeout=25.0):
 
 @contextlib.asynccontextmanager
 async def open_bottle(target, adapter=None, timeout=25.0):
-    """Connect to an address or a name (e.g. h2o00003095) WHILE STILL SCANNING.
+    """Connect to an address or a name (e.g. h2o00001234) WHILE STILL SCANNING.
     BlueZ drops this bottle the instant discovery stops, so the usual
     find -> stop scan -> connect fails with "device ... not found"."""
     by_mac = bool(MAC_RE.match(target))
@@ -414,7 +414,7 @@ async def main():
                     help="how to drain stored sips: auto (by firmware), ack (0x33 + 0x55), fast (0x57, the V3.0 way)")
     a = ap.parse_args()
     if a.command in ("dump", "listen") and not a.address:
-        sys.exit(f"usage: python3 hydro_test.py {a.command} <address or name, e.g. h2o00003095>")
+        sys.exit(f"usage: python3 hydro_test.py {a.command} <address or name, e.g. h2o00001234>")
     if a.command == "watch":
         await watch(a.address, a.seconds, a.adapter); return
     if a.command == "scan":

@@ -1,7 +1,7 @@
 # Bio-dash
 
 Live browser dashboards for BLE biometric and environmental sensors -- Polar H10 chest strap,
-Viatom / Checkme O2 ring, Atmos air-quality monitors -- built for Linux (Jetson Orin Nano, x86
+Viatom / Checkme O2 ring, Atmos air-quality monitors, HidrateSpark smart bottle -- built for Linux (Jetson Orin Nano, x86
 laptops) with BlueZ. Each dashboard pairs a **hardware worker** (talks to the device, records CSV)
 with a **web app** (live charts in the browser).
 

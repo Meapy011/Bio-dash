@@ -4,14 +4,12 @@ Live hydration dashboard for the **HidrateSpark** bottle (PRO / PRO 2): every si
 today's intake against a goal, fill level from the bottle's weight sensor, refills, battery.
 Port **5004**.
 
-- **Bluetooth catch: the radio matters.** A laptop's built-in radio often can't hear the bottle. An
-  old (Bluetooth 4.0) USB dongle hears it instantly but then shows "connected" with no data, because
-  the bottle never sends its large replies over it; capping the message size fixes that
-  (`ExchangeMTU = 64` under `[GATT]` in `/etc/bluetooth/main.conf`, then restart bluetooth; it
-  applies to every device on the computer). See the
-  [radio diagram](docs/ARCHITECTURE.md#7-hydro-dash-which-bluetooth-radio) and
-  `hydro_dashboard/TROUBLESHOOTING.md`.
-- **Totals come from the sip log**> ⚠ **The radio matters.** If the page says connected but shows no firmware, battery or sips, you
+> 🧪 **Still being tested.** Hydro-dash has been run on one HidrateSpark PRO 2 so far. Working on
+> that bottle: connecting, live and replayed sips, battery, and new in V3.1 the fill level from the
+> bottle's own calibration, bottle size read from the bottle, and glow. **Still being confirmed:**
+> reminders. Other bottle models are untested.
+
+> ⚠ **The radio matters.** If the page says connected but shows no firmware, battery or sips, you
 > are probably on an old USB dongle: see `TROUBLESHOOTING.md` section 12 and the
 > [radio diagram](../docs/ARCHITECTURE.md#7-hydro-dash-which-bluetooth-radio).
 

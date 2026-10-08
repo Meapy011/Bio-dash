@@ -25,7 +25,7 @@ Live browser dashboards for BLE biometric and environmental sensors, built for L
 The easiest setup is an isolated virtual environment, which keeps these packages separate from anything else installed on the machine:
 
 ```bash
-./setup_env.sh                     # creates .venv/ with all four dashboards' packages
+./setup_env.sh                     # creates .venv/ with all five dashboards' packages
 ./setup_env.sh polar_dashboard     # or just one dashboard
 ./setup_env.sh --fresh             # wipe and rebuild
 ```
@@ -86,10 +86,10 @@ The dashboards don't need internet access. Every library is included under each 
 
 | Library | Version | Used by |
 |---|---|---|
-| Chart.js | 3.9.1 | All four |
-| Luxon + chartjs-adapter-luxon | 3.0.1 / 1.2.0 | All four |
-| chartjs-plugin-streaming | 2.0.0 | All four |
-| Tailwind CSS (compiled, not the play CDN) | 3.4 | All four |
+| Chart.js | 3.9.1 | All five |
+| Luxon + chartjs-adapter-luxon | 3.0.1 / 1.2.0 | All five |
+| chartjs-plugin-streaming | 2.0.0 | All five |
+| Tailwind CSS (compiled, not the play CDN) | 3.4 | All five |
 
 To re-download them, or after changing a version in the script:
 
