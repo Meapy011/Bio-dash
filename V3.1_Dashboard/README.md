@@ -44,7 +44,7 @@ Or install system-wide instead: `pip3 install -r requirements.txt`.
 polar_dashboard/run_dashboard.sh    # or one dashboard on its own
 ```
 
-Every dashboard has its own port (**Omni 5000 · Polar 5001 · Atmos 5002 · Viatom 5003 · Hydro 5004**), and the sidebar links to the others, with a green dot for each one that's running.
+Every dashboard has its own port (**Omni 5000 · Polar 5001 · Atmos 5002 · Viatom 5003 · Hydro 5004**), and the sidebar links to the others that are running (a dashboard that isn't running isn't listed; it appears within about 10 seconds of starting).
 
 1. Wake the device. The H10 needs wet electrodes. The O2 Ultra only advertises while it's powered on and measuring.
 2. Pick it from the scanner panel and click **Connect**.
@@ -329,7 +329,7 @@ Run dashboards in the background, optionally from boot, without keeping a termin
 
 Everything that used to sit in the top bar lives in a sidebar, the same in every dashboard:
 
-- **Dashboards:** links to the other four in port order, with a green dot for each one that's running.
+- **Dashboards:** links to the others that are running, in port order. A dashboard that isn't running isn't listed.
 - **View:** the 🐞 debug panel (still **D**) and **☀ Keep screen on**.
 - **Updates** and **Power:** see the next two sections.
 

@@ -19,6 +19,7 @@ Run on one PRO 2: connecting, sips, fill level, bottle size and glow work; **rem
 - **Settings survive updates:** goal, reminders and the bottle's calibration are kept in `~/.config/bio-dash/`, not in the dashboard folder (an existing file is carried over once).
 - **"It's full now" / "It's empty now" show the result straight away** instead of waiting for the next sip.
 - **Services say so when they can't start.** If a dashboard's process stops on its own (most often: a new release folder with no `.venv` yet, so "No module named …"), the launcher now exits with an error instead of printing "System is LIVE" and ending quietly, so the service shows as failing and is retried. `./biodash.py` checks for the packages before installing services and tells you to run `./setup_env.sh` first.
+- **The sidebar lists only the dashboards that are running.** Links to dashboards that aren't running are hidden, and appear within about 10 seconds of one starting.
 - `hydro_test.py watch`: one mark per second showing when the bottle was heard; `listen` retries the connection while the bottle keeps advertising.
 - `hydro_test.py listen` prints the firmware family, capacity, each sip's source and the level left, and reports requests / acks / skipped records; `--drain auto|ack|fast`.
 - `PROTOCOL.md`: the full record layout, drain commands by firmware, bottle size and calibration commands.
