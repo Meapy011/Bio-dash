@@ -178,6 +178,27 @@ def today_total_ml():
     return total
 
 
+def calibration_from_log():
+    """The bottle's empty / full weights from the newest sip record on disk that has them."""
+    best = None
+    for path in bt_debug.latest_session_files("HidrateSpark", "sips", limit=20):
+        try:
+            with open(path) as f:
+                head = next(f, "").strip().split(",")
+                lo, hi = head.index("Cal_min"), head.index("Cal_max")
+                for line in f:
+                    p = line.rstrip("\n").split(",")
+                    try:
+                        ts, cal = int(p[0]), (int(p[lo]), int(p[hi]))
+                    except (ValueError, IndexError):
+                        continue
+                    if hp.valid_calibration(*cal) and (best is None or ts > best[0]):
+                        best = (ts, cal)
+        except Exception:
+            continue
+    return best[1] if best else None
+
+
 def seed_dedupe_from_today():
     """Sips already recorded today (any session) -- so a replay after a restart isn't double counted."""
     start = time.mktime(time.localtime()[:3] + (0, 0, 0, 0, 0, -1))
@@ -600,6 +621,12 @@ async def run_session(device, on_connected=None):
         # The calibration remembered from the last session, until this session's first record
         if hp.valid_calibration(settings.get("cal_min"), settings.get("cal_max")):
             live["cal_min"], live["cal_max"] = settings["cal_min"], settings["cal_max"]
+        else:
+            # none saved here (new machine, recordings copied over): the sip log has it
+            cal = calibration_from_log()
+            if cal:
+                live["cal_min"], live["cal_max"] = cal
+                event("calibration", f"empty {cal[0]} / full {cal[1]} (from the sip log)")
         # a sip first logged from the whole-percent byte may be replayed with a weight-based volume
         dedupe.volume_tol = round(settings["capacity_ml"] * 0.012) + 2
 
