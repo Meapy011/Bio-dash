@@ -26,6 +26,20 @@ MAX_CHART_POINTS = 20_000
 MAX_EXPORT_CELLS = 40_000_000
 
 app = FastAPI()
+
+
+@app.exception_handler(Exception)
+async def explain_errors(request: Request, exc: Exception):
+    """Anything unexpected: say what it was (the page shows it) and log the full traceback."""
+    import traceback
+    traceback.print_exc()
+    where = ""
+    tb = traceback.extract_tb(exc.__traceback__)
+    if tb:
+        where = f" ({os.path.basename(tb[-1].filename)} line {tb[-1].lineno})"
+    return JSONResponse({"detail": f"{type(exc).__name__}: {exc}{where}"}, status_code=500)
+
+
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 

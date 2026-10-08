@@ -148,7 +148,10 @@ def recordings(root, start_ms=None, end_ms=None, include=()):
         if stream in SKIP_STREAMS or (stream in BIG_STREAMS and stream not in include):
             continue
         if start_ms is not None:
-            lo = local_ms(day)
+            try:
+                lo = local_ms(day)
+            except ValueError:                   # a folder named like a date that isn't one
+                continue
             if lo > end_ms or lo + 2 * DAY_MS < start_ms:
                 continue
         out.append(Recording(path, dashboard, device, day, stream))
@@ -174,6 +177,13 @@ def to_ms(raw):
     return int(round(t if t > 1e11 else t * 1000))
 
 
+def clean_lines(f):
+    """Lines of a recording with NUL bytes removed. A power cut or crash while a CSV is being
+    written can leave a run of zero bytes in it; the readings either side are still good."""
+    for line in f:
+        yield line.replace("\0", "") if "\0" in line else line
+
+
 def read_columns(path):
     """{column: [(t_ms, value)]} for every numeric column of one recording (cached by mtime)."""
     try:
@@ -188,7 +198,7 @@ def read_columns(path):
     cols = {}
     try:
         with open(path, newline="", errors="replace") as f:
-            rd = csv.reader(f)
+            rd = csv.reader(clean_lines(f))
             head = next(rd, None)
             if head and len(head) >= 2:
                 names = [h.strip() for h in head[1:]]
@@ -210,7 +220,7 @@ def read_columns(path):
                         if math.isfinite(v):
                             lists[i].append((t, v))
                 cols = {n: l for n, l in zip(names, lists) if l}
-    except OSError:
+    except (OSError, csv.Error):
         cols = {}
     with _cache_lock:
         _cache[path] = (key, cols)
@@ -550,8 +560,8 @@ def refills(root, start_ms, end_ms):
     n = 0
     for path in glob.glob(os.path.join(root, "HidrateSpark", "*", "*", "*_events.csv")):
         try:
-            with open(path, newline="") as f:
-                rd = csv.reader(f)
+            with open(path, newline="", errors="replace") as f:
+                rd = csv.reader(clean_lines(f))
                 next(rd, None)
                 for row in rd:
                     if len(row) > 1 and row[1] == "refill":
@@ -561,7 +571,7 @@ def refills(root, start_ms, end_ms):
                             continue
                         if start_ms <= t <= end_ms:
                             n += 1
-        except OSError:
+        except (OSError, csv.Error):
             continue
     return n
 

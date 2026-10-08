@@ -88,7 +88,10 @@ with tempfile.TemporaryDirectory() as root:
     w(f"Omni/Polar H10 0A1B/{day}/09-00-00_rr.csv", "Timestamp_Epoch_ms,RR_ms\n" +
       "".join(f"{T0 + i * 1000},1000\n" for i in range(5)))
     w(f"Omni/O2Ring 4F21/{day}/09-00-00_vitals.csv", f"Timestamp_Epoch_ms,SpO2_pct,HR_BPM\n{T0},0,60\n{T0 + 2000},97,61\n")
+    # a recording with a run of NUL bytes in the middle (power cut while writing) still reads
+    w(f"Atmos/Mini/{day}/09-00-00_readings.csv", f"ts,co2\n{T0},600\n" + "\0" * 300 + f"{T0 + 1000},610\n{T0 + 2000},620\n")
     sigs = b.load_signals(root, b.local_ms(day), b.local_ms(day, True))
+    check("NUL bytes skipped", [v for _, v in sigs["air.co2"].points], [600, 610, 620])
     check("HR derived from R-R", sigs["heart.hr"].points[0][1], 60.0)
     check("SpO2 of 0 dropped", [v for _, v in sigs["oxygen.spo2"].points], [97])
     tab = b.table({"heart.hr": sigs["heart.hr"]}, T0, T0 + 5999, step=2000)
