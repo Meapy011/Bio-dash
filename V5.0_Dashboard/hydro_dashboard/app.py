@@ -57,6 +57,18 @@ DEFAULT_SETTINGS = {"capacity_ml": 621, "capacity_auto": True, "goal_ml": 2500, 
 GLOW_STYLES = ("pulse", "spin", "flash", "solid", "rainbow")
 
 app = FastAPI()
+
+
+@app.exception_handler(Exception)
+async def explain_errors(request, exc):
+    """Anything unexpected: say what it was (the page shows it) and log the full traceback."""
+    import traceback
+    traceback.print_exc()
+    tb = traceback.extract_tb(exc.__traceback__)
+    where = f" ({os.path.basename(tb[-1].filename)} line {tb[-1].lineno})" if tb else ""
+    from fastapi.responses import JSONResponse as _J
+    return _J({"detail": f"{type(exc).__name__}: {exc}{where}"}, status_code=500)
+
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 

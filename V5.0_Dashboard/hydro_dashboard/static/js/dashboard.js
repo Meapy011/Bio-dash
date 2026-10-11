@@ -104,8 +104,23 @@ let calcResult = null, calcSeq = 0;
 async function paintCalc() {
     const seq = ++calcSeq;
     let c;
-    try { c = await postJSON('/api/goal/suggest', { goal_calc: calcInputs() }); } catch (e) { return; }
+    try {
+        const res = await fetch('/api/goal/suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal_calc: calcInputs() }) });
+        const text = await res.text();
+        try { c = JSON.parse(text); } catch (e) { c = { detail: text.slice(0, 200) }; }
+        if (!res.ok || c.goal == null) throw new Error(res.status === 404
+            ? 'the server is older than this page: restart Hydro (systemctl --user restart biodash-hydro)'
+            : `server said ${res.status}: ${c.detail || text.slice(0, 200)}`);
+    } catch (e) {
+        if (seq !== calcSeq) return;
+        $('calc-goal').textContent = '--';
+        $('calc-working').innerHTML = '';
+        $('calc-weather-now').textContent = `Couldn't work out the goal: ${e.message}`;
+        $('calc-weather-now').className = 'mt-3 text-xs text-amber-400';
+        return;
+    }
     if (seq !== calcSeq) return;                    // a newer edit is on its way
+    $('calc-weather-now').className = 'mt-3 text-xs text-slate-400';
     calcResult = c;
     $('calc-goal').textContent = vol(c.goal);
     $('calc-goal-unit').textContent = unitLabel();
@@ -172,7 +187,10 @@ async function findTown() {
     box.classList.remove('hidden');
     box.innerHTML = '<span class="text-slate-500">Searching…</span>';
     let r;
-    try { r = await (await fetch(`/api/goal/places?q=${encodeURIComponent(q)}`)).json(); } catch (e) { r = { places: [], error: 'town search unavailable' }; }
+    try {
+        const res = await fetch(`/api/goal/places?q=${encodeURIComponent(q)}`);
+        r = res.ok ? await res.json() : { places: [], error: res.status === 404 ? 'restart Hydro to use town search' : `town search failed (${res.status})` };
+    } catch (e) { r = { places: [], error: 'town search unavailable' }; }
     box.innerHTML = r.places.length ? r.places.map((p, i) =>
         `<button type="button" data-i="${i}" class="px-3 py-1 rounded-full border bg-slate-700/50 text-slate-200 border-slate-600 hover:text-white">${esc(p.label)}</button>`).join('')
         : `<span class="text-slate-500">${esc(r.error || 'No town by that name.')}</span>`;
