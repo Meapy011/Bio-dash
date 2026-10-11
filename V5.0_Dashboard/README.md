@@ -392,6 +392,8 @@ dashboard's title and its connection status.
 
 A patch never moves you to a new version, and each action needs a second tap to confirm.
 
+Each patch lists its **patch notes** under its title (from the release's `PATCH_NOTES.md`, which the push script writes into the commit), so you can see what it changes before applying it.
+
 - **Needs a git clone**, not an unzipped copy: `git clone https://github.com/Meapy011/Bio-dash`
   and run the dashboards from the newest release folder (`Bio-dash/V5.0_Dashboard`).
 - **Only fast-forwards from the clone's own remote.** It refuses if tracked files were edited
@@ -504,3 +506,23 @@ readings in that row.
 - **Left out unless you `--include` them:** the fast waveforms (`ecg`, `acc`; use a matching step
   such as `--step 8ms`).
 - `--curated` keeps only the named signals; `--complete` keeps only rows where every signal has a value.
+
+## What's around: a standalone Bluetooth scanner
+
+`tools/ble_scan.py` lists every Bluetooth LE device the radio hears, with its signal, address type
+and a plain reading of what it's advertising: Apple Find My (AirTags, Find My-enabled accessories
+such as the HidrateSpark PRO 2, iPhones' offline-finding beacons), other Apple messages, Google Fast
+Pair, Eddystone, iBeacon, heart-rate straps, and the maker of anything else. It needs only `bleak`.
+
+```bash
+python3 tools/ble_scan.py                         # 30 s live table of everything
+python3 tools/ble_scan.py --find-my               # only Apple Find My traffic
+python3 tools/ble_scan.py --name h2o --adapter hci0
+python3 tools/ble_scan.py --services h2o00001234  # connect and list its services (0xFD44 = Find My)
+python3 tools/ble_scan.py --log scan.csv          # also save every advertisement
+```
+
+Stop the dashboards first if you want to connect to one of their devices (each device takes one
+connection at a time). Use the release's `.venv` if `bleak` isn't installed system-wide:
+`../.venv/bin/python3 tools/ble_scan.py`.
+

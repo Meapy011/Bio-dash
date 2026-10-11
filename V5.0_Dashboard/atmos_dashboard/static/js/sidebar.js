@@ -57,8 +57,9 @@
     .sb-btn.go:hover{background:#0891b2}.sb-btn.armed{background:#dc2626;border-color:#ef4444;color:#fff}
     .sb-btn:disabled{opacity:.45;cursor:not-allowed}
     .sb-row{display:flex;gap:6px}.sb-row .sb-btn{margin-top:0;white-space:nowrap;padding:6px 4px}
-    .sb-list{margin:6px 0 2px;padding:0;list-style:none;font-size:11.5px;color:#94a3b8;max-height:150px;overflow-y:auto}
+    .sb-list{margin:6px 0 2px;padding:0;list-style:none;font-size:11.5px;color:#94a3b8;max-height:220px;overflow-y:auto}
     .sb-list li{padding:3px 0;overflow-wrap:anywhere;border-top:1px solid #1e293b}.sb-list li:first-child{border-top:0}
+    .sb-notes{margin:3px 0 0 10px;padding:0;list-style:disc inside;color:#cbd5e1}.sb-notes li{border:0;padding:1px 0}
     .sb-pre{margin:6px 0 0;padding:6px;border-radius:6px;background:#020617;color:#cbd5e1;
         font:10.5px/1.4 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;max-height:140px;overflow:auto}
     #sb-foot{padding:8px 16px 12px;font-size:10.5px;color:#475569;border-top:1px solid #1e293b}
@@ -212,7 +213,7 @@
             const p = info.patch, u = info.upgrade;
             if (!p && !u) h += `<div class="sb-note ok">${v} is up to date.</div>`;
             if (p) h += `<div class="sb-note warn">Patch for ${v}: ${p.count} change${p.count === 1 ? '' : 's'}</div>
-                <ul class="sb-list">${p.commits.map(c => `<li>${esc(c.subject)}</li>`).join('')}</ul>`;
+                <ul class="sb-list">${p.commits.map(c => `<li>${esc(c.subject)}${(c.notes || []).length ? `<ul class="sb-notes">${c.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
             if (u) h += `<div class="sb-note warn" style="margin-top:8px">New version: V${esc(u.version)}</div>
                 ${u.notes ? `<details><summary style="cursor:pointer;font-size:11.5px;color:#94a3b8">What's new</summary><pre class="sb-pre">${esc(u.notes)}</pre></details>` : ''}`;
             (info.blockers || []).forEach(b => { h += `<div class="sb-note err" style="margin-top:8px">${esc(b)}</div>`; });

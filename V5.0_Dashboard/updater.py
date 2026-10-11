@@ -104,8 +104,16 @@ def check(fetch=True):
         behind = int(git("rev-list", "--count", f"HEAD..{up}", cwd=top))
         ahead = int(git("rev-list", "--count", f"{up}..HEAD", cwd=top))
         # patch: upstream commits that touch this release folder
-        log = git("log", "--format=%h%x09%ad%x09%s", "--date=short", f"HEAD..{up}", "--", folder or ".", cwd=top)
-        commits = [dict(zip(("id", "date", "subject"), l.split("\t", 2))) for l in log.splitlines() if l]
+        log = git("log", "--format=%h%x1f%ad%x1f%s%x1f%b%x1e", "--date=short", f"HEAD..{up}", "--", folder or ".", cwd=top)
+        commits = []
+        for rec in log.split("\x1e"):
+            parts = rec.strip("\n").split("\x1f")
+            if len(parts) < 3:
+                continue
+            body = parts[3] if len(parts) > 3 else ""
+            # patch notes: the "- ..." lines of the commit message (push_v5.sh fills them in)
+            notes = [l.strip()[2:].strip() for l in body.splitlines() if l.strip().startswith(("- ", "* "))]
+            commits.append({"id": parts[0], "date": parts[1], "subject": parts[2], "notes": notes[:8]})
         if commits:
             out["patch"] = {"count": len(commits), "commits": commits[:12]}
         # upgrade: a newer V*_Dashboard folder upstream
@@ -375,6 +383,8 @@ def main():
             print(f"  Patch available: {info['patch']['count']} change(s)")
             for c in info["patch"]["commits"]:
                 print(f"    {c['date']}  {c['subject']}")
+                for n in c.get("notes") or []:
+                    print(f"                  - {n}")
         if info["upgrade"]:
             print(f"  New version available: V{info['upgrade']['version']}")
         if not info["patch"] and not info["upgrade"]:

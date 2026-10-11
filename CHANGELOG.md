@@ -36,6 +36,8 @@ the other dashboards save and talks to no device. (No V4: four is an unlucky num
   `tools/night_report.py` read past them. (Found on a real night's SpO₂ recording, where they
   stopped the analysis page from loading.)
 - The analysis page shows the actual error when something goes wrong, instead of "request failed (500)".
+- **`tools/ble_scan.py`:** standalone Bluetooth LE scanner with plain-language advertisements (Apple Find My, Continuity, Fast Pair, iBeacon, Eddystone, heart-rate straps, makers by ID), address types, `--find-my`, `--services` to list a device's GATT services, and `--log` to CSV.
+- **Patch notes:** each patch carries a `PATCH_NOTES.md`; `push_v5.sh` puts it into the commit message, and the sidebar's Updates section (and `updater.py check`) lists the notes under each patch before you apply it.
 
 ## V3.1
 
