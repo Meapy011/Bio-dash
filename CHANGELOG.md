@@ -38,6 +38,9 @@ the other dashboards save and talks to no device. (No V4: four is an unlucky num
 - The analysis page shows the actual error when something goes wrong, instead of "request failed (500)".
 - **`tools/ble_scan.py`:** standalone Bluetooth LE scanner with plain-language advertisements (Apple Find My, Continuity, Fast Pair, iBeacon, Eddystone, heart-rate straps, makers by ID), address types, `--find-my`, `--services` to list a device's GATT services, and `--log` to CSV.
 - **Patch notes:** each patch carries a `PATCH_NOTES.md`; `push_v5.sh` puts it into the commit message, and the sidebar's Updates section (and `updater.py check`) lists the notes under each patch before you apply it.
+- **Hydro-dash with a Bluetooth 5 dongle, confirmed:** a TP-Link UB500 Plus on a Jetson Orin Nano (JetPack 6, kernel 5.15) works out of the box and streams the bottle with no `ExchangeMTU` cap. The radio diagram, `hydro_dashboard/TROUBLESHOOTING.md` (12) and the README say so.
+- **Debug panels: the real radio maker and USB ID.** Every radio showed "Linux Foundation · 1d6b:0246": that is BlueZ's own device ID, which D-Bus reports for any adapter. The ID now comes from the USB device itself (sysfs).
+- **Hydro-dash: water calculations.** *How Much Should I Drink?* suggests a daily goal from body weight, a reference intake, exercise and **the local weather** (today's feels-like high from Open-Meteo for your town: +250 mL from 25 °C up to +1 L from 36 °C; cold days unchanged), shows the working, and sets it as your goal in one click. *Update my goal every morning* does that by itself each day from 05:00. The goal maths is in `water.py` (`test_water.py`, `test_goal_settings.py`). The Today tile adds what's left (in mL and bottles) and your pace through the reminder hours: on pace, or how far behind, and about how much per hour until the end of the day. Pace maths in `static/js/water_calc.js` (`test_water_calc.js`).
 
 ## V3.1
 

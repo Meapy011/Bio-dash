@@ -208,7 +208,8 @@ sensor, refills and battery, with hour and 7-day charts and day-scale tile trend
   old (Bluetooth 4.0) USB dongle hears it instantly but then shows "connected" with no data, because
   the bottle never sends its large replies over it; capping the message size fixes that
   (`ExchangeMTU = 64` under `[GATT]` in `/etc/bluetooth/main.conf`, then restart bluetooth; it
-  applies to every device on the computer). See the
+  applies to every device on the computer). A Bluetooth 5 dongle needs no cap (tested: TP-Link
+  UB500 Plus, working out of the box on a Jetson Orin Nano). See the
   [radio diagram](docs/ARCHITECTURE.md#7-hydro-dash-which-bluetooth-radio) and
   `hydro_dashboard/TROUBLESHOOTING.md`.
 - **Totals come from the sip log** (`_sips.csv`), so they survive restarts.

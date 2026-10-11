@@ -285,6 +285,12 @@ Always find the bottle by name, never by a saved address.
 Because of this, Hydro-dash no longer picks a dongle automatically. Choose the radio in the debug
 menu: a Bluetooth 5 dongle is the best of both; an old one needs the cap above.
 
+**Confirmed with a Bluetooth 5 dongle:** a TP-Link UB500 Plus (Realtek RTL8761BU, reports HCI 5.1)
+on a Jetson Orin Nano connects to the bottle and streams sips with no `ExchangeMTU` line at all.
+It worked out of the box on JetPack 6 (kernel 5.15): the kernel loads `rtl_bt/rtl8761bu_fw.bin`
+itself and no `btusb new_id` is needed (it shares the plain UB500's USB ID, `2357:0604`). Check
+yours with `hciconfig -a`: the dongle should show `Bus: USB`, `UP RUNNING` and `HCI Version: 5.x`.
+
 ## Checklist
 
 | Symptom | Check |

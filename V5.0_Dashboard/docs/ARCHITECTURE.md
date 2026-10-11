@@ -375,7 +375,7 @@ flowchart TB
     M -->|"capped: ExchangeMTU = 64<br/>in /etc/bluetooth/main.conf"| OK
     X -.->|add the cap,<br/>restart bluetooth| M
 
-    N --> N1["Hears the bottle and carries<br/>large replies whole<br/>(expected; not yet tried)"]
+    N --> N1["Hears the bottle and carries<br/>large replies whole, no cap needed<br/>(confirmed: TP-Link UB500 Plus)"]
     N1 --> OK
 
     OK(["Services read:<br/>sips, fill level and glow work"])

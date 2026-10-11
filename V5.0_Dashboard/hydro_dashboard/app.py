@@ -6,6 +6,7 @@ import datetime
 import json
 import os
 import re
+import threading
 import time
 
 import uvicorn
@@ -15,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import bt_debug
+import water
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, "logs_hydro")
@@ -44,6 +46,13 @@ DEFAULT_SETTINGS = {"capacity_ml": 621, "capacity_auto": True, "goal_ml": 2500, 
                     "reminders": {"enabled": True, "from": "08:00", "to": "22:00", "every_min": 60,
                                   "always": False, "sound": False},
                     "goal_glow": True, "sip_glow": None,
+                    # inputs to the goal calculator, kept so it opens as you left it
+                    "goal_calc": {"weight": None, "weight_unit": "lb", "reference": "men",
+                                  "exercise_min": 0,
+                                  "weather": "off",        # "auto" (local forecast), "hot" (by hand), "off"
+                                  "place": None,           # {"name", "label", "lat", "lon"} for the forecast
+                                  "follow": False,         # set the goal from the suggestion each morning
+                                  "followed_on": None},
                     "glow": {"style": "pulse", "color1": "#2bff00", "color2": "#1499ff"}}
 GLOW_STYLES = ("pulse", "spin", "flash", "solid", "rainbow")
 
@@ -247,6 +256,49 @@ class SettingsRequest(BaseModel):
     reminders: dict | None = None
     goal_glow: bool | None = None
     sip_glow: str | None = None            # "on" / "off" / "leave"
+    goal_calc: dict | None = None          # the goal calculator's inputs (nothing is sent to the bottle)
+
+
+def clean_goal_calc(d, old):
+    c = dict(DEFAULT_SETTINGS["goal_calc"], **(old or {}))
+    if "hot" in c:                                  # before the weather choice it was a checkbox
+        if c.pop("hot") and c.get("weather") == "off":
+            c["weather"] = "hot"
+    if "weight" in d:                               # only when sent: a partial update keeps it
+        try:
+            w = float(d["weight"]) if d["weight"] not in (None, "") else None
+            c["weight"] = w if w is None or 20 <= w <= 700 else c["weight"]
+        except (TypeError, ValueError):
+            pass
+    if d.get("weight_unit") in ("lb", "kg"):
+        c["weight_unit"] = d["weight_unit"]
+    if d.get("reference") in ("men", "women"):
+        c["reference"] = d["reference"]
+    try:
+        c["exercise_min"] = max(0, min(600, int(d.get("exercise_min", c["exercise_min"]) or 0)))
+    except (TypeError, ValueError):
+        pass
+    if d.get("weather") in ("auto", "hot", "off"):
+        c["weather"] = d["weather"]
+    if "place" in d:
+        p = d["place"]
+        try:
+            lat, lon = float(p["lat"]), float(p["lon"])
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                c["place"] = {"name": str(p.get("name") or "")[:80], "label": str(p.get("label") or p.get("name") or "")[:160],
+                              "lat": round(lat, 4), "lon": round(lon, 4)}
+        except (TypeError, KeyError, ValueError):
+            if p is None:
+                c["place"] = None
+    if "follow" in d:
+        c["follow"] = bool(d["follow"])
+        if c["follow"]:
+            c["followed_on"] = None                 # turning it on applies today's suggestion
+    return c
+
+
+def goal_calc():
+    return clean_goal_calc({}, settings().get("goal_calc"))
 
 
 @app.get("/api/settings")
@@ -285,10 +337,71 @@ def set_settings(req: SettingsRequest):
         s["goal_glow"], resync = req.goal_glow, True
     if req.sip_glow in ("on", "off", "leave"):
         s["sip_glow"], resync = {"on": True, "off": False, "leave": None}[req.sip_glow], True
+    if req.goal_calc is not None:
+        s["goal_calc"] = clean_goal_calc(req.goal_calc, s.get("goal_calc"))
     _write_json(SETTINGS_FILE, s)
     if resync:
         _command({"action": "sync"})       # picked up if the bottle is connected; otherwise sent at the next connect
     return s
+
+
+# ---------- goal calculator: suggestion, local weather, the morning update ----------
+class SuggestRequest(BaseModel):
+    goal_calc: dict | None = None          # inputs being edited (not saved); omitted -> the saved ones
+
+
+@app.post("/api/goal/suggest")
+def goal_suggest(req: SuggestRequest):
+    calc = clean_goal_calc(req.goal_calc or {}, settings().get("goal_calc"))
+    weather, note = water.weather_for(calc)
+    out = water.suggest_goal(calc, weather)
+    out["weather_note"] = note
+    out["place"] = calc.get("place")
+    out["follow"] = calc.get("follow")
+    return out
+
+
+@app.get("/api/goal/places")
+def goal_places(q: str = ""):
+    try:
+        return {"places": water.find_places(q)}
+    except Exception as e:
+        return {"places": [], "error": f"town search unavailable ({e.__class__.__name__})"}
+
+
+def apply_daily_goal(now=None):
+    """Once each morning, if "update my goal every morning" is on: today's suggestion becomes the
+    goal (and goes to the bottle). Returns the new goal, or None."""
+    now = now or datetime.datetime.now()
+    s = settings()
+    calc = clean_goal_calc({}, s.get("goal_calc"))
+    today = now.date().isoformat()
+    if not water.due_for_daily_update(calc, today, now.hour):
+        return None
+    weather, note = water.weather_for(calc)
+    if note and calc.get("weather") == "auto" and calc.get("place") and now.hour < 12:
+        return None                          # forecast not reachable yet: try again later this morning
+    goal = water.suggest_goal(calc, weather)["goal"]
+    calc["followed_on"] = today
+    s["goal_calc"], s["goal_ml"] = calc, goal
+    _write_json(SETTINGS_FILE, s)
+    _command({"action": "sync"})
+    print(f"💧 Goal for {today}: {goal} mL" + (f" ({weather['feels_max_c']:.0f} °C feels-like high)" if weather else ""))
+    return goal
+
+
+def _daily_goal_loop():
+    while True:
+        try:
+            apply_daily_goal()
+        except Exception as e:
+            print(f"daily goal: {e!r}")
+        time.sleep(600)
+
+
+@app.on_event("startup")
+def _start_daily_goal():
+    threading.Thread(target=_daily_goal_loop, name="daily-goal", daemon=True).start()
 
 
 class GlowPatternRequest(BaseModel):

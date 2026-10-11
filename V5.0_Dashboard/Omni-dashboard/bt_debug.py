@@ -127,6 +127,10 @@ async def list_adapters():
             val = lambda k: props[k].value if k in props else None
             hci = path.rsplit("/", 1)[-1]
             vendor, usb_id = _vendor_from_modalias(val("Modalias"))
+            if (usb_id or "").startswith("1d6b:"):
+                # BlueZ reports its own DeviceID (usb:v1D6Bp0246 = "Linux Foundation") here
+                # unless main.conf sets one, so it says nothing about the radio
+                vendor, usb_id = None, None
             a = {
                 "name": hci,
                 "address": val("Address"),
@@ -137,8 +141,8 @@ async def list_adapters():
                 "usb_id": usb_id,
             }
             for k, v in _sysfs_info(hci).items():
-                if v and not a.get(k):
-                    a[k] = v
+                if v:
+                    a[k] = v        # the kernel's view of the actual USB device wins
             adapters.append(a)
     except Exception as e:
         # No system bus (container, macOS) -> fall back to whatever sysfs shows

@@ -46,6 +46,8 @@ async function loadSummary() {
     $('today-val').textContent = vol(s.today_ml);
     $('today-goal').textContent = `${Math.round(100 * s.today_ml / goal)}% of ${vol(goal)} ${unitLabel()} goal`;
     $('goal-ring').style.strokeDashoffset = 314.16 * (1 - Math.min(1, s.today_ml / goal));
+    lastToday = s.today_ml;
+    paintPace();
     $('sips-val').textContent = s.sips_today;
     $('refills-val').textContent = s.refills_today;
     if (s.last_sip) { $('last-val').textContent = vol(s.last_sip.ml); $('last-ago').textContent = ago(s.last_sip.ts); }
@@ -64,6 +66,147 @@ async function loadSummary() {
     // trend: cumulative intake today
     for (const p of s.cumulative) trends.record('intake', p.x, p.y);
 }
+
+// ---------- pace: today's intake against the goal, spread over the reminder hours ----------
+let lastToday = null;
+function paintPace() {
+    if (lastToday == null) return;
+    const r = settings.reminders || {};
+    const goal = settings.goal_ml || 2500;
+    const p = WaterCalc.pace(lastToday, goal, new Date(), r.from, r.to);
+    const el = $('today-pace');
+    if (!p) { el.textContent = ''; return; }
+    if (p.done) { el.textContent = 'Goal reached 🎉'; el.className = 'text-xs text-emerald-400 mt-0.5'; return; }
+    const cap = settings.capacity_ml;
+    const bottles = cap ? ` (≈ ${(p.left / cap).toFixed(1)} bottles)` : '';
+    let text = `${vol(p.left)} ${unitLabel()} to go${bottles}`, tone = 'text-slate-400';
+    if (p.before) text += ` · day starts ${r.from || '08:00'}`;
+    else if (p.after) tone = 'text-amber-400';          // the drinking window is over: "to go" says it all
+    else if (p.behind) {
+        text += ` · ${vol(p.behind)} behind`; tone = 'text-amber-400';
+    } else if (!p.after) text += ' · on pace';
+    if (p.perHour && !p.before) text += ` · ~${vol(p.perHour)} ${unitLabel()}/h until ${r.to || '22:00'}`;
+    el.textContent = text;
+    el.className = `text-xs ${tone} mt-0.5`;
+}
+
+// ---------- goal calculator (the server works it out: water.py) ----------
+const postJSON = async (url, body) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+const tempUnit = () => units === 'oz' ? '°F' : '°C';
+const temp = (c) => c == null ? '--' : units === 'oz' ? Math.round(c * 9 / 5 + 32) : Math.round(c);
+let calcPlace = null;            // {name, label, lat, lon}
+function calcInputs() {
+    const w = $('calc-weight').value;
+    return { weight: w === '' ? null : +w, weight_unit: $('calc-unit').value, reference: $('calc-ref').value,
+             exercise_min: +$('calc-exercise').value || 0, weather: $('calc-weather').value };
+}
+let calcResult = null, calcSeq = 0;
+async function paintCalc() {
+    const seq = ++calcSeq;
+    let c;
+    try { c = await postJSON('/api/goal/suggest', { goal_calc: calcInputs() }); } catch (e) { return; }
+    if (seq !== calcSeq) return;                    // a newer edit is on its way
+    calcResult = c;
+    $('calc-goal').textContent = vol(c.goal);
+    $('calc-goal-unit').textContent = unitLabel();
+    const cap = settings.capacity_ml, u = unitLabel(), lines = [];
+    $('calc-bottles').textContent = cap ? `≈ ${(c.goal / cap).toFixed(1)} bottles of ${vol(cap)} ${unitLabel()}` : '';
+    lines.push([`reference intake  ${vol(c.reference)} ${u}`, `${$('calc-ref').value === 'women' ? '2.7' : '3.7'} L total × 80 % from drinks`]);
+    if (c.by_weight) {
+        lines.push([`by body weight    ${vol(c.by_weight)} ${u}`, `${c.kg} kg × 33 mL/kg ("half your weight in oz")`]);
+        lines.push([`halfway between   ${vol(c.base)} ${u}`, '']);
+    } else lines.push(['', 'add your weight to scale it to you']);
+    if (c.exercise) lines.push([`+ exercise        ${vol(c.exercise)} ${u}`, '≈ 0.7 L per hour']);
+    const wx = c.weather;
+    if (c.weather_ml) lines.push([`+ weather         ${vol(c.weather_ml)} ${u}`,
+        wx ? `${c.weather_word}: feels like ${temp(wx.feels_max_c)} ${tempUnit()} at the warmest` : c.weather_word]);
+    else if (c.weather_word === 'cold') lines.push(['+ weather         0', "cold: no less water needed (cold air is dry, and thirst runs low)"]);
+    else if (c.weather_word === 'mild') lines.push(['+ weather         0', 'mild day']);
+    lines.push([`= ${vol(c.goal)} ${u}`, c.clamped ? 'rounded, kept within 1.5–5 L' : 'rounded']);
+    $('calc-working').innerHTML = lines.map(([fig, why]) =>
+        `<div><span style="white-space:pre">${esc(fig)}</span>${why ? `  <span class="text-slate-500" style="white-space:normal">${esc(why)}</span>` : ''}</div>`).join('');
+    // today's weather, in words
+    const auto = $('calc-weather').value === 'auto';
+    $('calc-place-wrap').style.display = auto ? '' : 'none';
+    $('calc-weather-now').textContent = !auto ? '' : c.weather_note ? c.weather_note
+        : wx ? `Today in ${calcPlace ? calcPlace.name : 'your town'}: high ${temp(wx.max_c)} ${tempUnit()} (feels like ${temp(wx.feels_max_c)}), low ${temp(wx.min_c)}`
+               + (wx.now_c != null ? `, now ${temp(wx.now_c)} ${tempUnit()}` : '') + ' · Open-Meteo' : '';
+    const same = c.goal === settings.goal_ml;
+    $('calc-use').disabled = same;
+    $('calc-use').style.opacity = same ? .5 : 1;
+    $('calc-use').textContent = same ? 'This is your goal' : 'Use as my daily goal';
+}
+function paintPlace() {
+    $('calc-place').textContent = calcPlace ? calcPlace.label || calcPlace.name : '';
+    const have = !!calcPlace;
+    $('calc-town').classList.toggle('hidden', have);
+    $('calc-find').classList.toggle('hidden', have);
+    $('calc-change').classList.toggle('hidden', !have);
+}
+function fillCalcForm() {
+    const g = settings.goal_calc || {};
+    $('calc-weight').value = g.weight ?? '';
+    $('calc-unit').value = g.weight_unit || 'lb';
+    $('calc-ref').value = g.reference || 'men';
+    $('calc-exercise').value = g.exercise_min ?? 0;
+    $('calc-weather').value = g.weather || (g.hot ? 'hot' : 'off');
+    $('calc-follow').checked = !!g.follow;
+    calcPlace = g.place || null;
+    paintPlace(); paintCalc();
+}
+let calcSaveTimer = null, calcPaintTimer = null;
+function saveCalc(extra = {}) {
+    clearTimeout(calcSaveTimer);
+    return postJSON('/api/settings', { goal_calc: Object.assign(calcInputs(), extra) }).then(s => { settings = s; }).catch(() => {});
+}
+$('calc-form').addEventListener('input', (e) => {
+    if (e.target.id === 'calc-town') return;
+    clearTimeout(calcPaintTimer); calcPaintTimer = setTimeout(paintCalc, 250);
+    clearTimeout(calcSaveTimer); calcSaveTimer = setTimeout(saveCalc, 800);
+});
+$('calc-form').addEventListener('submit', (e) => { e.preventDefault(); if (document.activeElement === $('calc-town')) findTown(); });
+async function findTown() {
+    const q = $('calc-town').value.trim();
+    const box = $('calc-places');
+    if (q.length < 2) return;
+    box.classList.remove('hidden');
+    box.innerHTML = '<span class="text-slate-500">Searching…</span>';
+    let r;
+    try { r = await (await fetch(`/api/goal/places?q=${encodeURIComponent(q)}`)).json(); } catch (e) { r = { places: [], error: 'town search unavailable' }; }
+    box.innerHTML = r.places.length ? r.places.map((p, i) =>
+        `<button type="button" data-i="${i}" class="px-3 py-1 rounded-full border bg-slate-700/50 text-slate-200 border-slate-600 hover:text-white">${esc(p.label)}</button>`).join('')
+        : `<span class="text-slate-500">${esc(r.error || 'No town by that name.')}</span>`;
+    box._places = r.places;
+}
+$('calc-find').addEventListener('click', findTown);
+$('calc-places').addEventListener('click', async (e) => {
+    const i = e.target.closest('button[data-i]')?.dataset.i;
+    if (i == null) return;
+    calcPlace = $('calc-places')._places[+i];
+    $('calc-places').classList.add('hidden');
+    paintPlace();
+    await saveCalc({ place: calcPlace });
+    paintCalc();
+});
+$('calc-change').addEventListener('click', () => {
+    calcPlace = null; paintPlace(); $('calc-town').value = ''; $('calc-town').focus();
+});
+$('calc-follow').addEventListener('change', async () => {
+    await saveCalc({ follow: $('calc-follow').checked });
+    flash('calc-msg', $('calc-follow').checked
+        ? "Each morning (from 5:00) your goal is set from this, with that day's weather, and sent to the bottle."
+        : 'Your goal stays as it is until you change it.', 8000);
+    // turning it on applies today's suggestion now
+    if ($('calc-follow').checked && calcResult) $('calc-use').click();
+});
+$('calc-use').addEventListener('click', async () => {
+    if (!calcResult) return;
+    await saveCalc();
+    try { settings = await postJSON('/api/settings', { goal_ml: calcResult.goal }); } catch (err) { return; }
+    fillSettingsForm(); paintCalc(); loadSummary();
+    flash('calc-msg', bottleConnected ? `Goal set to ${vol(calcResult.goal)} ${unitLabel()} and sent to the bottle.` : `Goal set to ${vol(calcResult.goal)} ${unitLabel()}; the bottle gets it when it next connects.`, 6000);
+});
+setInterval(() => { if ($('calc-weather').value === 'auto') paintCalc(); }, 30 * 60 * 1000);   // the forecast moves on
 
 let lastGlowUpload = null;
 // ---------- live status + scanner ----------
@@ -239,6 +382,7 @@ function fillSettingsForm() {
 }
 function applyUnits() {
     for (const id of ['today-unit', 'fill-unit', 'last-unit']) $(id).textContent = unitLabel();
+    if ($('calc-weight')) paintCalc();
     loadSummary();
 }
 $('settings-form').addEventListener('submit', async (e) => {
@@ -294,7 +438,7 @@ const trends = createTileTrends({
 (async () => {
     try { settings = await (await fetch('/api/settings')).json(); } catch (e) {}
     units = settings.units || 'ml';
-    fillSettingsForm(); fillGlowForm(); fillGlowStyle(); applyUnits();
+    fillSettingsForm(); fillGlowForm(); fillGlowStyle(); fillCalcForm(); applyUnits();
     poll(); setInterval(poll, 1000);
     setInterval(loadSummary, 5000);
     setInterval(() => { if (lastSipSeen) $('last-ago').textContent = ago(lastSipSeen); }, 30000);

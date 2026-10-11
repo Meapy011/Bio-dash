@@ -21,7 +21,7 @@ Port **5004**.
    service via `./biodash.py`.
 3. Open <http://localhost:5004>, **shake or tip the bottle** to wake it, and click **Connect**.
    If it isn't listed, tick **Show all nearby devices** — some firmware advertises another name.
-4. **Bottle Settings:** set your daily goal. The bottle size is read from the bottle ("Automatic"), or
+4. **Bottle Settings:** set your daily goal, or work one out in **How Much Should I Drink?** (below). The bottle size is read from the bottle ("Automatic"), or
    pick one of the sizes HidrateSpark sells (17 / 20 / 21 / 24 / 30 / 32 oz) from the list.
 5. **Take a sip.** The bottle sends its own "empty" and "full" weights with every sip record, and
    the fill level appears from the first one. There is nothing to calibrate in the dashboard.
@@ -36,8 +36,9 @@ Port **5004**.
    dashboard closed. It's re-sent on every connect, along with the time of day, goal and today's total.
 
 **Use a USB Bluetooth dongle if you can.** A laptop's built-in radio shares its antenna with Wi-Fi
-and often misses the bottle's short adverts; Hydro-dash picks an external radio automatically when
-one is plugged in.
+and often misses the bottle's short adverts. Pick the dongle in the debug panel (D): the choice is
+saved by the radio's address, so it holds when the hci numbers change after a reboot. A Bluetooth 5
+dongle is best (tested: TP-Link UB500 Plus); an old 4.0 one needs the fix in TROUBLESHOOTING 12.
 
 **If the fill level is wrong**, the bottle's own calibration is off. Stand it upright with the cap
 on, completely full or completely empty, and press **It's full now** / **It's empty now** (click
@@ -48,8 +49,28 @@ dashboards).
 
 ## What you see
 
-- **Today** — intake vs. goal (ring), **In the bottle**, **Last sip**, **Sips / Refills today**,
-  **Battery**. Tap a tile for its trend (1 h · 6 h · 1 day · 7 days).
+- **Today** — intake vs. goal (ring), what's left to go (and in bottles), and your **pace**: the
+  goal spread evenly over the reminder hours (from / to), so it says *on pace* or how far behind
+  you are, and roughly how much per hour gets you there. Also **In the bottle**, **Last sip**,
+  **Sips / Refills today**, **Battery**. Tap a tile for its trend (1 h · 6 h · 1 day · 7 days).
+- **How Much Should I Drink?** — a suggested daily goal from drinks, with the working shown:
+  halfway between the National Academies reference intake (3.7 L total for men, 2.7 L for women,
+  of which about 80 % usually comes from drinks) and your body weight × 33 mL/kg ("half your weight
+  in pounds, in fl oz"), plus about 0.7 L per hour of exercise and extra for the day's weather,
+  rounded and kept within 1.5–5 L. **Use as my daily goal** sets it (and sends it to the bottle).
+  The inputs are kept with the other settings. It's a rule of thumb, not medical advice: a doctor's
+  fluid limit or a kidney or heart condition comes first.
+  - **Weather: today's local forecast.** Find your town once; the day's "feels like" high (heat
+    and humidity together) adds 250 mL from 25 °C / 77 °F, 500 from 28 °C / 82 °F, 750 from
+    32 °C / 90 °F and 1 L from 36 °C / 97 °F. Cold days add nothing and take nothing away: cold air
+    is dry and thirst runs low, so the goal stays. The forecast comes from
+    [Open-Meteo](https://open-meteo.com) (free, no account; only the town's coordinates are sent),
+    needs internet on the computer running the dashboard, and is cached for 30 minutes. Offline,
+    the goal is worked out without it and the card says so. *Hot (by hand)* adds 500 mL instead.
+  - **Update my goal every morning:** from 05:00 the dashboard sets the day's goal from the
+    suggestion, with that day's weather, and sends it to the bottle, even with no page open. It
+    waits until noon for the forecast if the network isn't up yet. A goal you type in yourself
+    lasts until the next morning.
 - **Today by hour** and **Last 7 days** vs. goal.
 - **Today's sips** — each sip, marked *live* or *synced from bottle* (sips taken while away are
   buffered on the bottle and replayed with their original times on the next connection).
@@ -115,7 +136,7 @@ saves a capture to `Documents/Bio-dash/HidrateSpark/test-captures/`.
 ## Files
 
 `hydro_protocol.py` protocol + state machines (tests: `python3 test_hydro_protocol.py`) ·
-`hydro_worker.py` Bluetooth worker · `hydro_test.py` standalone bottle test · `app.py` web server · `~/.config/bio-dash/hydro_settings.json` (kept across updates) capacity / goal /
+`water.py` goal maths and the Open-Meteo forecast (tests: `python3 test_water.py`, `python3 test_goal_settings.py`) · `static/js/water_calc.js` pace maths (tests: `node test_water_calc.js`) · `hydro_worker.py` Bluetooth worker · `hydro_test.py` standalone bottle test · `app.py` web server · `~/.config/bio-dash/hydro_settings.json` (kept across updates) capacity / goal /
 the bottle's last known calibration (created on first save).
 
 ## Acknowledgements
