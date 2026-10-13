@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V5.0_Dashboard/`](V5.0_Dashboard) | **V5.0 (latest)** | Analysis dashboard (port 5005): summaries of every device for a day or a range, every signal on one clock, CSV export, overnight reports. (No V4: four is unlucky.) |
+| [`V5.2_Dashboard/`](V5.2_Dashboard) | **V5.2 (latest)** | Every Bluetooth adapter tested on the Jetson Orin, with why each did or didn't work; the UB500 Plus proven with the bottle; the Orin boot catch; water calculations with the local weather; the Bluetooth scanner. |
+| [`V5.0_Dashboard/`](V5.0_Dashboard) | V5.0 | Analysis dashboard (port 5005): summaries of every device for a day or a range, every signal on one clock, CSV export, overnight reports. (No V4: four is unlucky.) |
 | [`V3.1_Dashboard/`](V3.1_Dashboard) | V3.1 | Hydro-dash tuning: fill level and sip volume from the bottle's own calibration, bottle size read from the bottle, glow colours and patterns, reminders (still being confirmed), and the Bluetooth radio catch documented |
 | [`V3.0_Dashboard/`](V3.0_Dashboard) | V3.0 | Hydro-dash for the HidrateSpark PRO 2 (new, still being tested), overnight SpO₂ report, shutdown / reboot buttons, architecture diagrams |
 | [`V2.8_Dashboard/`](V2.8_Dashboard) | V2.8 | Debug panels, radio routing, general Atmos dashboard (Mini / Sphere S4 / S5, Wi-Fi), tile trends, ECG Monitor/Classic toggle, services (`biodash.py`), keep-awake, auto-reconnect, recordings in `Documents/Bio-dash` |
@@ -30,7 +31,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`), s
 ## Quick start
 
 ```bash
-cd V5.0_Dashboard
+cd V5.2_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -38,7 +39,7 @@ Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## How it works
 
-Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V5.0_Dashboard/docs/ARCHITECTURE.md`](V5.0_Dashboard/docs/ARCHITECTURE.md).
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V5.2_Dashboard/docs/ARCHITECTURE.md`](V5.2_Dashboard/docs/ARCHITECTURE.md).
 
 ## Keeping data out of the repo
 

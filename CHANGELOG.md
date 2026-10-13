@@ -1,5 +1,33 @@
 # Changelog
 
+## V5.2
+
+Everything patched into V5.0 since its release (the Bluetooth scanner, water calculations with the
+local weather, the Bluetooth 5 dongle confirmation, power-cut protection; see V5.0 below), gathered
+into one release, plus what a night of testing radios on the Jetson Orin taught us:
+
+- **Every Bluetooth adapter tried, and why it did or didn't work:** a table in
+  `docs/ARCHITECTURE.md` section 9 (TP-Link UB500 Plus, ASUS USB-BT400, the Orin's built-in radio,
+  a laptop's built-in radio), with two new diagrams: which radio serves which device on the Orin,
+  and what happens at power-on.
+- **UB500 Plus proven with the bottle:** 10 of 10 cold connects with every HidrateSpark
+  characteristic present, heard 8 times in 25 s at −60 dBm, and picked by Hydro-dash by itself
+  after a reboot. The radio diagram (section 7) carries the numbers; how to run the same checks on
+  any adapter is in `hydro_dashboard/TROUBLESHOOTING.md` section 13.
+- **Found: the Orin doesn't power on with a UB500 Plus and an ASUS BT400 both attached** (no logo,
+  no screen, before Linux). Not power (two ASUS dongles boot fine, all four add about 1 W) and not
+  fixable from the dongles' side; plug the ASUS dongles in after boot. TROUBLESHOOTING 14.
+- **Broadcom BCM20702 firmware patch:** "BCM: firmware Patch file not found" explained, with the
+  file, its checksum and how to install it (ASUS BT400 goes from build 0000 to 1467).
+  TROUBLESHOOTING 15.
+- **`hydro_test.py` says when the name is almost right:** a run that doesn't find the bottle lists
+  the bottle-like names it did see ("Seen instead: h2o00003095 <- did you mean this one?"). A
+  one-character typo in the name had made a working radio look dead.
+- **Powering the Orin from USB-C:** why a 12 V trigger board works with some chargers only (12 V is
+  optional in USB Power Delivery; 20 V is required above 45 W). ARCHITECTURE section 9.
+- Radio pins and the last device carry across upgrades (the updater copies them); the docs now say
+  so, instead of warning that they reset.
+
 ## V5.0
 
 A new dashboard that looks back instead of live: **Analysis** (port 5005). It reads the recordings
