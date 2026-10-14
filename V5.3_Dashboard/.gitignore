@@ -11,6 +11,8 @@ debug.json
 status*.json
 last_device*.json
 radio_config.json
+radio_choice.json
+radio_avoid.json
 *_profile.json
 *_settings.json
 logs/

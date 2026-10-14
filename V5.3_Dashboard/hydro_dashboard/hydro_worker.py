@@ -45,7 +45,15 @@ def _settings_path():
 
 SETTINGS_FILE = _settings_path()
 
-radio_pin = bt_debug.RadioPin(os.path.join(BASE_DIR, "radio_config.json"), prefer="internal")   # same default as the other dashboards; pick a dongle in the debug menu if the built-in radio can't hear the bottle (see TROUBLESHOOTING 12)
+# Radio: by default not pinned ("any"): every radio listens for the bottle and the one that hears it
+# best connects (a radio that just failed with it is passed over for a while). A pin from the debug
+# panel still works. A new file name, so a pin saved by an older version doesn't carry over.
+radio_pin = bt_debug.RadioPin(os.path.join(BASE_DIR, "radio_choice.json"), prefer="internal", default="any")
+ANY_SETTLE_S = 1.0           # after the first radio hears the bottle, listen this long for the others
+RADIO_PENALTY_S = 600        # a radio that failed with the bottle is passed over for this long...
+NO_SERVICES_PENALTY_S = 7 * 86400   # ...or a week when it connected with an empty service list: the
+                                    # Bluetooth 4.0 problem (TROUBLESHOOTING 12), which won't fix itself
+RADIO_AVOID_FILE = os.path.join(BASE_DIR, "radio_avoid.json")
 last_device = bt_debug.LastDevice(os.path.join(BASE_DIR, "last_device.json"))
 
 CONNECT_ATTEMPTS = 3
@@ -57,8 +65,10 @@ REDRAIN_EVERY_S = 30          # ask for buffered sips periodically, in case live
 # cal_min / cal_max: the bottle's own empty / full weights, remembered from its last sip record.
 # reminders: the glow-reminder schedule sent to the bottle. goal_glow: glow when the goal is
 # reached. sip_glow: glow on each sip (None = leave the bottle as it is).
+# cal_pending: {"which": "full", "since": t} after "It's empty now": the bottle takes empty-then-full
+# as one calibration and counts no sips until it has the full point too (the page shows a banner).
 DEFAULT_SETTINGS = {"capacity_ml": 621, "capacity_auto": True, "goal_ml": 2500, "units": "ml",
-                    "cal_min": None, "cal_max": None, "cal_at": None,
+                    "cal_min": None, "cal_max": None, "cal_at": None, "cal_pending": None,
                     "reminders": dict(hp.DEFAULT_REMINDERS), "goal_glow": True, "sip_glow": None,
                     "glow": {"style": "pulse", "color1": "#2bff00", "color2": "#1499ff"}}
 # BIODASH_HYDRO_DRAIN=fast forces the V3.0 way of draining (one 0x57 per record, no acknowledge)
@@ -106,6 +116,8 @@ ble_device_cache = {}
 last_rssi = {}
 radio_hci = None
 _adapters_at = 0.0
+radio_failed = {}     # adapter address -> until when it's passed over (a connection through it failed)
+radio_good = None     # adapter address of the last connection that worked
 
 live = {}
 counters = {}
@@ -152,6 +164,15 @@ def set_status(state, address=None, attempt=None):
     _write_json(STATUS_FILE, {"state": state, "address": address, "attempt": attempt,
                               "max_attempts": CONNECT_ATTEMPTS, "live": live,
                               "last_device": last_device.load(), "settings": load_settings(), "debug": debug})
+
+
+def set_cal_pending(value, why):
+    s = load_settings()
+    if s.get("cal_pending") == value:
+        return
+    s["cal_pending"] = value
+    save_settings(s)
+    event("calibration_pending" if value else "calibration_pending_cleared", why)
 
 
 def event(name, detail=""):
@@ -339,6 +360,9 @@ class Session:
             await self.client.write_gatt_char(hp.CHAR_DEBUG, payload, response=True)
             event(f"calibrate_{which}", f"sent {payload.hex()} -- the bottle confirms its new value with the next sip record")
             self.assume_calibrated(which)
+            set_cal_pending({"which": "full", "since": int(time.time())} if which == "empty" else None,
+                            "waiting for 'It's full now': the bottle counts no sips until then" if which == "empty"
+                            else "calibration complete")
         except Exception as e:
             event("calibrate_failed", f"{which}: {e!r}")
 
@@ -412,6 +436,9 @@ class Session:
             counters["duplicates"] += 1
             return
         source = "replayed" if r["ts"] < self.connected_at - 5 else "live"
+        pending = load_settings().get("cal_pending")
+        if pending and source == "live" and r["ts"] > pending.get("since", 0):
+            set_cal_pending(None, "a live sip arrived, so the bottle is counting again")
         counters["sips_" + source] += 1
         session.writerows("sips", [[int(r["ts"] * 1000), r["volume_ml"], r["pct"] if r["pct"] is not None else "",
                                     r["total_reported"], source, r["layout"], data.hex(),
@@ -485,25 +512,128 @@ async def handle_command(cmd, sess):
 
 
 # ---------------------------------------------------------------------------
+# Radios: one pinned / default radio, or every radio at once ("any")
+# ---------------------------------------------------------------------------
+def usable_radios():
+    return [a for a in debug.get("adapters") or [] if a.get("powered", True) and not a.get("error") and a.get("name")]
+
+
+def any_radio():
+    """The radios to listen on together, or None when one radio is used (pinned, auto, or only one)."""
+    if radio_pin.config().upper() != "ANY":
+        return None
+    radios = usable_radios()
+    return radios if len(radios) > 1 else None
+
+
+def address_of(hci):
+    return next((a.get("address") for a in debug.get("adapters") or [] if a.get("name") == hci), None)
+
+
+class Radios:
+    """A BleakScanner on each radio; the callback gets the radio's hci name too."""
+
+    def __init__(self, radios, callback):
+        self.radios, self.callback, self.scanners = radios, callback, {}
+
+    async def start(self):
+        for a in self.radios:
+            hci = a["name"]
+            sc = BleakScanner(lambda d, adv, hci=hci: self.callback(hci, d, adv), **bt_debug.bluez_args(hci))
+            try:
+                await sc.start()
+                self.scanners[hci] = sc
+            except Exception as e:
+                logging.warning(f"Couldn't scan on {hci}: {e!r}")
+        if not self.scanners:
+            raise RuntimeError("no radio could scan")
+
+    async def stop(self, keep=None):
+        for hci, sc in list(self.scanners.items()):
+            if hci != keep:
+                with contextlib.suppress(Exception):
+                    await sc.stop()
+                self.scanners.pop(hci, None)
+
+
+def load_radio_avoid():
+    try:
+        with open(RADIO_AVOID_FILE) as f:
+            radio_failed.update({k: float(v) for k, v in json.load(f).items() if float(v) > time.time()})
+    except (OSError, ValueError, AttributeError):
+        pass
+
+
+def avoid_radio(hci, error):
+    """Pass a radio over after a failed link: 10 min, or a week (remembered across restarts) when the
+    bottle's service list came back empty through it."""
+    addr = address_of(hci)
+    if not addr:
+        return
+    long_ = "service list" in str(error)
+    radio_failed[addr] = time.time() + (NO_SERVICES_PENALTY_S if long_ else RADIO_PENALTY_S)
+    msg = (f"{hci} ({addr}) is passed over for a week: the bottle's service list came back empty through it "
+           f"(an older Bluetooth 4.0 radio? TROUBLESHOOTING 12)" if long_ else
+           f"{hci} is passed over for {RADIO_PENALTY_S // 60} min (the link through it failed)")
+    event("radio_avoided", msg)
+    keep = {k: v for k, v in radio_failed.items() if v - time.time() > RADIO_PENALTY_S}
+    with contextlib.suppress(OSError):
+        _write_json(RADIO_AVOID_FILE, keep)
+
+
+def pick_radio(heard):
+    """heard: {hci: (device, rssi)} -> (hci, why). Strongest signal wins; the radio that worked last
+    time gets a small head start; one that failed recently is passed over unless it's the only one."""
+    now = time.time()
+    scored = []
+    for hci, (_, rssi) in heard.items():
+        addr = address_of(hci)
+        score = (rssi if rssi is not None else -100) + (6 if addr and addr == radio_good else 0)
+        failed = bool(addr) and radio_failed.get(addr, 0) > now
+        scored.append((not failed, score, hci, rssi, failed))
+    scored.sort(reverse=True)
+    _, _, hci, rssi, failed = scored[0]
+    others = ", ".join(f"{h} {r} dBm" + (" (failed recently)" if f else "") for _, _, h, r, f in scored[1:])
+    why = f"any radio: {hci} heard it best ({rssi} dBm)" + (f"; also heard on {others}" if others else "; no other radio heard it")
+    if failed:
+        why += "; it failed recently, but no other radio heard the bottle"
+    return hci, why
+
+
+# ---------------------------------------------------------------------------
 # Scanning
 # ---------------------------------------------------------------------------
-async def scan():
-    global selected_target, _adapters_at, radio_hci
+async def refresh_adapters():
+    global _adapters_at
     if time.time() - _adapters_at > 10:
         debug["adapters"] = await bt_debug.list_adapters()
         _adapters_at = time.time()
+
+
+async def scan():
+    global selected_target, radio_hci
+    await refresh_adapters()
+    many = any_radio()
     radio_hci, reason = radio_pin.resolve(debug["adapters"])
+    if many:
+        reason = "any radio: listening on " + ", ".join(a["name"] for a in many)
+    elif radio_pin.config().upper() == "ANY":
+        reason = "any radio: only one radio, so that one"
     debug["radio"] = {"config": radio_pin.config(), "hci": radio_hci, "reason": reason}
+    debug["radio_avoided"] = [{"address": a, "until": round(t)} for a, t in radio_failed.items() if t > time.time()]
     set_status("scanning")
     found, cut_short = {}, False
 
-    def on_adv(device, adv):
+    def on_adv(device, adv, hci=None):
         # Unnamed devices are kept too (shown with "Show all"): some bottles / firmware
         # advertise the name only in a scan response, or not at all.
         name = device.name or adv.local_name or ""
         uuids = list(adv.service_uuids or [])
         ble_device_cache[device.address] = device
         last_rssi[device.address] = adv.rssi
+        prev = found.get(device.address)
+        if prev and (prev["rssi"] or -100) >= (adv.rssi or -100):
+            return                      # another radio hears it better
         found[device.address] = {
             "name": name or "(no name)", "address": device.address, "rssi": adv.rssi or -100,
             "bottle": hp.is_bottle(name, uuids),
@@ -511,13 +641,25 @@ async def scan():
             "mfr": [f"{k:04x}" for k in (adv.manufacturer_data or {})][:3],
         }
 
+    async def listen():
+        nonlocal cut_short
+        for _ in range(20):            # up to 4 s; leave early when the UI picks a device
+            await asyncio.sleep(0.2)
+            if os.path.exists(COMMAND_FILE):
+                cut_short = True
+                break
+
     try:
-        async with BleakScanner(on_adv, **bt_debug.bluez_args(radio_hci)):
-            for _ in range(20):            # up to 4 s; leave early when the UI picks a device
-                await asyncio.sleep(0.2)
-                if os.path.exists(COMMAND_FILE):
-                    cut_short = True
-                    break
+        if many:
+            radios = Radios(many, lambda hci, d, adv: on_adv(d, adv, hci))
+            await radios.start()
+            try:
+                await listen()
+            finally:
+                await radios.stop()
+        else:
+            async with BleakScanner(on_adv, **bt_debug.bluez_args(radio_hci)):
+                await listen()
     except Exception as e:
         logging.error(f"Scan error: {e}")
         await asyncio.sleep(2)          # e.g. adapter off: don't spin
@@ -687,8 +829,9 @@ async def run_session(device, on_connected=None):
 
 
 async def main():
-    global selected_target
+    global selected_target, radio_hci, radio_good
     logging.info("Hydro-dash worker online.")
+    load_radio_avoid()
     _write_json(DEVICES_FILE, [])
     set_status("scanning")
     if os.path.exists(COMMAND_FILE):
@@ -705,25 +848,53 @@ async def main():
             # the scan is still running; the scan stops once the link is up.
             debug["phase"] = "waiting for the bottle to advertise -- shake or tip it"
             set_status("connecting", mac, attempt)
-            seen, box = asyncio.Event(), {}
+            seen, box, heard = asyncio.Event(), {}, {}
+            await refresh_adapters()
+            many = any_radio()
+            if not many:
+                radio_hci, reason = radio_pin.resolve(debug["adapters"])
+                debug["radio"] = {"config": radio_pin.config(), "hci": radio_hci, "reason": reason}
+
+            def is_target(dev, adv):
+                name = dev.name or adv.local_name or ""
+                return dev.address == target["address"] or (target["name"] and name == target["name"])
 
             def on_adv(dev, adv):                     # bleak requires exactly (device, advertisement)
-                name = dev.name or adv.local_name or ""
-                if not seen.is_set() and (dev.address == target["address"] or (target["name"] and name == target["name"])):
+                if not seen.is_set() and is_target(dev, adv):
                     box["dev"] = dev
                     last_rssi[dev.address] = adv.rssi
                     seen.set()
 
-            scanner = None
+            def on_adv_any(hci, dev, adv):            # every radio: remember who heard it, and how well
+                if is_target(dev, adv):
+                    if hci not in heard or (adv.rssi or -100) > (heard[hci][1] or -100):
+                        heard[hci] = (dev, adv.rssi)
+                    seen.set()
+
+            scanner = radios = None
 
             async def stop_scan():
                 if scanner is not None:
                     with contextlib.suppress(Exception):
                         await scanner.stop()
+                if radios is not None:
+                    await radios.stop()
             try:
-                scanner = BleakScanner(on_adv, **bt_debug.bluez_args(radio_hci))
-                await scanner.start()
-                await asyncio.wait_for(seen.wait(), LOOKUP_TIMEOUT_S)
+                if many:
+                    radios = Radios(many, on_adv_any)
+                    await radios.start()
+                    await asyncio.wait_for(seen.wait(), LOOKUP_TIMEOUT_S)
+                    await asyncio.sleep(ANY_SETTLE_S)          # give the other radios a moment to hear it too
+                    radio_hci, why = pick_radio(heard)
+                    await radios.stop(keep=radio_hci)          # the chosen radio keeps scanning until the link is up
+                    box["dev"], rssi = heard[radio_hci]
+                    last_rssi[box["dev"].address] = rssi
+                    debug["radio"] = {"config": radio_pin.config(), "hci": radio_hci, "reason": why}
+                    logging.info(why)
+                else:
+                    scanner = BleakScanner(on_adv, **bt_debug.bluez_args(radio_hci))
+                    await scanner.start()
+                    await asyncio.wait_for(seen.wait(), LOOKUP_TIMEOUT_S)
             except (asyncio.TimeoutError, Exception) as e:
                 await stop_scan()
                 counters["link_failures"] = counters.get("link_failures", 0) + 1
@@ -738,10 +909,17 @@ async def main():
             debug["adapter"] = bt_debug.adapter_of(device)
             debug["device"] = {"name": device.name, "address": device.address, "rssi": last_rssi.get(device.address)}
             set_status("connecting", mac, attempt)
+            link_t0 = time.time()
             try:
                 await run_session(device, on_connected=stop_scan)
+                if address_of(radio_hci):
+                    radio_good = address_of(radio_hci)
+                    radio_failed.pop(radio_good, None)
                 break
             except Exception as e:
+                # a link that worked for a minute and then dropped is the bottle, not the radio
+                if many and time.time() - link_t0 < 60:
+                    avoid_radio(radio_hci, e)
                 counters["link_failures"] = counters.get("link_failures", 0) + 1
                 debug["last_error"] = {"at": time.time(), "attempt": attempt,
                                        "error": f"{e.__class__.__name__}: {e}"[:300]}

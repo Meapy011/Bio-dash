@@ -6,3 +6,5 @@
 - tools/export_mcint.py does the same from the command line; --forge ~/ReaLLM-Forge builds the datasets too
 - tools/mcint_decode.py turns sampled CSVs back into real units
 - Sidebar -> Restart -> Restart everything (or ./restart_all.py): stops every dashboard and Bluetooth worker from any release, resets Bluetooth, starts again what was running
+- Hydro: after "It's empty now" a banner stays up until "It's full now" (the bottle counts no sips until it has both)
+- Hydro isn't pinned to a radio: every radio listens and the one that hears the bottle best connects (failed radios are passed over)

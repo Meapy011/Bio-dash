@@ -35,14 +35,21 @@ Port **5004**.
    send to bottle** stores the schedule on the bottle itself, so it keeps reminding you with the
    dashboard closed. It's re-sent on every connect, along with the time of day, goal and today's total.
 
-**Use a USB Bluetooth dongle if you can.** A laptop's built-in radio shares its antenna with Wi-Fi
-and often misses the bottle's short adverts. Pick the dongle in the debug panel (D): the choice is
-saved by the radio's address, so it holds when the hci numbers change after a reboot. A Bluetooth 5
-dongle is best (tested: TP-Link UB500 Plus); an old 4.0 one needs the fix in TROUBLESHOOTING 12.
+**The radio isn't pinned.** Hydro-dash listens on every radio at once and connects through the one
+that hears the bottle best (the one that worked last time gets a small head start). A radio whose
+connection fails is passed over for 10 minutes, or for a week if the bottle's service list came back
+empty through it (an old Bluetooth 4.0 dongle, TROUBLESHOOTING 12). A laptop's built-in radio
+shares its antenna with Wi-Fi and often misses the bottle's short adverts, so a Bluetooth 5 dongle
+still helps (tested: TP-Link UB500 Plus). To pin one radio anyway, pick it under *Radio for this
+dashboard* in the debug panel (D); *Any radio* undoes that. Pins saved by V5.2 and older don't
+carry over: Hydro now starts unpinned.
 
 **If the fill level is wrong**, the bottle's own calibration is off. Stand it upright with the cap
 on, completely full or completely empty, and press **It's full now** / **It's empty now** (click
 twice to confirm). That tells the bottle to store a new value, which arrives with the next sip.
+**After "It's empty now", fill it and press "It's full now".** The bottle takes empty and full as
+one calibration and counts no sips until it has both. The page keeps a banner up until you do
+(with its own "It's full now" button), and it stays across reloads and restarts.
 
 After that it reconnects to the bottle by itself whenever it wakes (auto-reconnect, like the other
 dashboards).

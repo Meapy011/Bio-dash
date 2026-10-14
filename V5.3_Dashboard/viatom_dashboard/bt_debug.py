@@ -191,7 +191,9 @@ def bluez_args(hci):
 
 
 class RadioPin:
-    """radio_config.json next to a dashboard: {"radio": "auto" | "<adapter address>"}.
+    """radio_config.json next to a dashboard: {"radio": "auto" | "any" | "<adapter address>"}.
+    "any" is handled by the dashboard itself (Hydro: scan on every radio, connect through the
+    one that hears the device best); resolve() returns None for it.
 
     "auto" with two or more radios picks by placement, so dashboards running side
     by side split sensibly no matter how the radios were numbered:
@@ -200,17 +202,18 @@ class RadioPin:
     With one radio (or no placement info) auto uses the system default radio.
     """
 
-    def __init__(self, path, prefer=None):
+    def __init__(self, path, prefer=None, default="auto"):
         self.path = path
         self.prefer = prefer
+        self.default = default          # "any" (Hydro): no pin, every radio listens and the best one connects
 
     def config(self):
         try:
             with open(self.path) as f:
-                v = (_json.load(f).get("radio") or "auto").strip()
-            return v or "auto"
+                v = (_json.load(f).get("radio") or self.default).strip()
+            return v or self.default
         except Exception:
-            return "auto"
+            return self.default
 
     def save(self, address):
         tmp = self.path + ".tmp"
@@ -223,6 +226,8 @@ class RadioPin:
         usable = [a for a in (adapters or []) if a.get("powered", True) and not a.get("error")]
         want = self.config().upper()
         reason = None
+        if want == "ANY":
+            return None, "any radio: every radio listens, the one that hears the device best connects"
         if want != "AUTO":
             for a in usable:
                 if (a.get("address") or "").upper() == want:

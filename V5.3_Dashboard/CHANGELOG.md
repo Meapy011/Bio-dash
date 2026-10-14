@@ -19,6 +19,15 @@ V5.2 plus an export made for ReaLLM-Forge, and one button to restart everything:
   switched off and on. "Reset Bluetooth too" can be unticked. Hand-started dashboards come back in
   the background with their output in `~/.cache/bio-dash/logs/`; Omni needs sudo so it's left for
   you. Same access rule as Reboot: this computer only, unless `BIODASH_ALLOW_POWER=1`.
+- **Hydro: a banner after "It's empty now"** until you press "It's full now". The bottle takes empty
+  and full as one calibration and counts no sips until it has both, which looked like the dashboard
+  had stopped updating. The banner has its own "It's full now" button, survives reloads and
+  restarts, and clears itself if a live sip arrives (the bottle is counting again).
+- **Hydro isn't pinned to a radio any more:** it listens on every radio and connects through the one
+  that hears the bottle best (the last radio that worked gets a small head start). A radio whose
+  connection fails is passed over for 10 minutes, or for a week (remembered across restarts) when
+  the bottle's service list came back empty through it, the Bluetooth 4.0 problem. The pin could lock
+  onto the wrong radio now and then. Pinning is still in the debug panel; old pins don't carry over.
 - Each export comes with `<name>.columns.json` (scales, ranges, "no reading" values) and
   `<name>.prepare.sh`, which runs `get_dataset.sh` with every `--range` filled in.
   `tools/export_mcint.py --forge ~/ReaLLM-Forge` builds the datasets in one go.

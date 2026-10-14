@@ -245,6 +245,7 @@ async function poll() {
     if (settings.units && settings.units !== units) { units = settings.units; applyUnits(); }
     const live = st.live || {};
     const streaming = st.state === 'streaming';
+    paintCalBanner(st.settings && st.settings.cal_pending, streaming);
     bottleConnected = streaming;
     canUploadGlow = live.can_upload_glow;
     const up = live.glow_upload;
@@ -433,9 +434,41 @@ document.querySelectorAll('button[data-cal]').forEach(b => b.addEventListener('c
     }
     calArmed = null; paintCal();
     await fetch('/api/calibrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ which }) });
-    $('settings-msg').textContent = `Told the bottle it's ${which}: "In the bottle" now shows ${which === 'full' ? '100%' : '0%'}.`;
+    $('settings-msg').textContent = which === 'empty' ? `Told the bottle it's empty. Now fill it and tap "It's full now": it counts no sips until then.`
+        : `Told the bottle it's full: "In the bottle" now shows 100%.`;
     setTimeout(() => { $('settings-msg').textContent = ''; }, 6000);
 }));
+
+// After "It's empty now" the bottle waits for "It's full now" and counts no sips until then:
+// a banner stays up (across reloads and restarts; the worker keeps it in its settings) until it's done.
+let bannerArmed = false, bannerTimer = null;
+let bannerStreaming = false;
+function paintCalBanner(pending, streaming = bannerStreaming) {
+    bannerStreaming = streaming;
+    const show = !!(pending && pending.which === 'full');
+    $('cal-banner').classList.toggle('hidden', !show);
+    if (!show) return;
+    const mins = Math.round((Date.now() / 1000 - (pending.since || 0)) / 60);
+    $('cal-banner-since').textContent = !pending.since ? '' : mins < 1 ? ' just now' : mins < 90 ? ` ${mins} min ago` : ` ${Math.round(mins / 60)} h ago`;
+    const b = $('cal-banner-btn');
+    b.textContent = bannerArmed ? 'Tap again: it is full now' : "It's full now";
+    b.disabled = !streaming;
+    b.style.opacity = streaming ? '' : '.5';
+    b.title = streaming ? '' : 'The bottle isn\u2019t connected: tip it to wake it, and close the HidrateSpark phone app';
+}
+$('cal-banner-btn').addEventListener('click', async () => {
+    if (!bannerStreaming) return;
+    clearTimeout(bannerTimer);
+    if (!bannerArmed) {
+        bannerArmed = true; paintCalBanner({ which: 'full', since: 0 });
+        bannerTimer = setTimeout(() => { bannerArmed = false; poll(); }, 5000);
+        return;
+    }
+    bannerArmed = false;
+    await fetch('/api/calibrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ which: 'full' }) });
+    flash('settings-msg', "Told the bottle it's full: sips count again from the next one.");
+    setTimeout(poll, 1500);
+});
 
 // ---------- tap-a-tile trends (hydration is slow: hours and days) ----------
 const trends = createTileTrends({

@@ -285,6 +285,11 @@ Always find the bottle by name, never by a saved address.
 Because of this, Hydro-dash no longer picks a dongle automatically. Choose the radio in the debug
 menu: a Bluetooth 5 dongle is the best of both; an old one needs the cap above.
 
+*Since V5.3:* the pin turned out to lock onto the wrong radio now and then, so Hydro-dash isn't
+pinned by default any more: every radio listens and the one that hears the bottle best connects. A
+radio through which the service list comes back empty (this problem) is passed over for a week,
+remembered across restarts, so an old dongle is tried once and then left alone.
+
 **Confirmed with a Bluetooth 5 dongle:** a TP-Link UB500 Plus (Realtek RTL8761BU, reports HCI 5.1)
 on a Jetson Orin Nano connects to the bottle and streams sips with no `ExchangeMTU` line at all.
 It worked out of the box on JetPack 6 (kernel 5.15): the kernel loads `rtl_bt/rtl8761bu_fw.bin`
@@ -383,6 +388,7 @@ in its name; the collection's `DEVICES.md` lists them.
 | Bottle not listed | Shake or tip the bottle right before / during the scan (it only advertises briefly); keep it within ~1 m; tick *Show all nearby devices* |
 | Bottle rarely seen, or seen but the connection times out | The radio isn't hearing it. Plug in a USB Bluetooth dongle and select it in the debug panel; check with `python3 hydro_test.py watch --adapter hci1` |
 | `device … not found` | Use the current Hydro-dash (it follows the bottle by name and connects while scanning) |
+| Connects, fill level updates, but no sips since you pressed *It's empty now* | The bottle is waiting for the other half of its calibration: fill it, cap on, press **It's full now** (the banner at the top does the same). Sips drunk in between aren't recorded. |
 | Connects, but no sips | Debug panel: *Sync after connecting* = complete, *Sip records via* found; *Undecoded sip frames* rising → new firmware layout, send `_raw.csv` |
 | Sips missing | Debug panel: *Skipped records* should be 0 |
 | Volumes look ~30 % off | Capacity setting vs. your bottle (21 oz 621 mL, 30 oz tumbler 887 mL) — in the HidrateSpark app *and* Hydro-dash |

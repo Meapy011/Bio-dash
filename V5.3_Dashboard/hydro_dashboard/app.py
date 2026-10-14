@@ -42,7 +42,7 @@ def _settings_path():
 SETTINGS_FILE = _settings_path()
 DASH = "HidrateSpark"
 DEFAULT_SETTINGS = {"capacity_ml": 621, "capacity_auto": True, "goal_ml": 2500, "units": "ml",
-                    "cal_min": None, "cal_max": None, "cal_at": None,
+                    "cal_min": None, "cal_max": None, "cal_at": None, "cal_pending": None,
                     "reminders": {"enabled": True, "from": "08:00", "to": "22:00", "every_min": 60,
                                   "always": False, "sound": False},
                     "goal_glow": True, "sip_glow": None,
@@ -455,12 +455,12 @@ def calibrate(req: CalibrateRequest):
 
 
 # ---------- radio pinning + auto-reconnect (same as the other dashboards) ----------
-radio_pin = bt_debug.RadioPin(os.path.join(BASE_DIR, "radio_config.json"), prefer="internal")
+radio_pin = bt_debug.RadioPin(os.path.join(BASE_DIR, "radio_choice.json"), prefer="internal", default="any")   # not pinned unless you pick one
 LAST_DEVICES = {"device": bt_debug.LastDevice(os.path.join(BASE_DIR, "last_device.json"))}
 
 
 class RadioRequest(BaseModel):
-    address: str = "auto"
+    address: str = "any"
 
 
 @app.get("/api/radio")

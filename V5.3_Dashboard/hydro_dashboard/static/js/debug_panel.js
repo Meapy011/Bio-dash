@@ -62,14 +62,16 @@ const DebugPanel = (() => {
         }).join('');
         const note = (inUse ? '' : `<div class="text-xs text-slate-500 mt-1">Radio in use is identified once a device is selected.</div>`) +
             `<div class="text-[11px] text-slate-500 mt-1">hci numbers follow plug-in order and can swap between boots; the address is the stable identity.</div>`;
-        const r = dbg.radio || {}, cur = (r.config || 'auto').toUpperCase();
+        const r = dbg.radio || {}, cur = (r.config || 'any').toUpperCase();
         const picker = `<div class="mt-3 pt-3 border-t border-slate-700">
             <label class="block text-xs text-slate-400 mb-1">Radio for this dashboard</label>
             <select data-radio class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-xs font-mono text-slate-200 focus:border-cyan-500 focus:outline-none">
-                <option value="auto" ${cur === 'AUTO' ? 'selected' : ''}>Auto</option>
+                <option value="any" ${cur === 'ANY' ? 'selected' : ''}>Any radio (recommended): whichever hears the bottle best</option>
+                <option value="auto" ${cur === 'AUTO' ? 'selected' : ''}>Auto: the built-in radio when there are several</option>
                 ${(dbg.adapters || []).map(a => `<option value="${esc(a.address)}" ${cur === (a.address || '').toUpperCase() ? 'selected' : ''}>${esc(a.address)} (${esc(a.name)}${a.placement && a.placement !== 'unknown' ? ', ' + esc(a.placement) : ''})</option>`).join('')}
             </select>
-            <div class="text-[11px] text-slate-500 mt-0.5">→ ${esc(r.hci || 'system default')} · ${esc(r.reason || '—')}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">→ ${esc(r.hci || (cur === 'ANY' ? 'every radio' : 'system default'))} · ${esc(r.reason || '—')}</div>
+            ${(dbg.radio_avoided || []).map(x => `<div class="text-[11px] text-amber-400 mt-0.5">Passed over until ${esc(new Date(x.until * 1000).toLocaleString())}: ${esc(x.address)} (a connection through it failed)</div>`).join('')}
             <div class="text-[11px] text-slate-500 mt-1">Saved by address. Applies on the next scan; a live connection isn't dropped.</div>
         </div>`;
         return section('Bluetooth Radio', cards + note + picker);
