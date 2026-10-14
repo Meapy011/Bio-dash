@@ -575,6 +575,32 @@ Then train and sample with ReaLLM-Forge's demo:
 `CSV_MC_OUTPUT_ROOT=bio_dash_mcint bash demos/csv_mc_int_demo.sh <name>.csv`
 (it uses the CSV as the sampling prompt, so a short export, an hour say, makes a better prompt).
 
+## Just the ECG
+
+`tools/export_ecg.py` writes the Polar H10's ECG on its own, nothing else from Bio-dash:
+
+```bash
+python3 tools/export_ecg.py 2026-10-07                    # one day
+python3 tools/export_ecg.py --from "2026-10-07 22:00" --to "2026-10-08 07:00" --method cubic
+python3 tools/export_ecg.py 2026-10-07 --uv               # whole microvolts, for ReaLLM-Forge csv_mc_int
+```
+
+| File | |
+|---|---|
+| `<name>_raw.csv` | `Timestamp_Epoch_ms,ECG_mV`: every sample as recorded (130 Hz), nothing changed. Polar-dash and Omni recordings merged in time order, the same strap's duplicate samples dropped |
+| `<name>_200hz.csv` | `ECG_mV` only, no timestamp: an even 200 Hz, interpolated, so row k is k/200 s into its stretch |
+| `<name>_200hz_stretches.csv` | where each unbroken stretch starts in the 200 Hz file, its start time and the gap before it |
+
+- **Stretches:** a gap of more than 3 samples (~23 ms) ends one. Nothing is invented across a gap;
+  the stretches file shows where the 200 Hz file jumps. `--split` writes one file per stretch;
+  stretches under 10 s are left out (`--min-stretch`).
+- **How it's resampled:** the strap samples evenly on its own clock but the recorded timestamps are
+  whole milliseconds, so each sample's time comes from its position in the stretch (at the
+  stretch's measured rate), then `--method linear` (default) or `cubic` (Catmull-Rom; about three
+  times closer on a sharp QRS spike) gives 200 Hz. `--hz` for another rate.
+- `--uv`: whole microvolts (what the H10 measures, so nothing is lost), clipped to ±10000 µV, with
+  the `--range` for csv_mc_int printed.
+
 ## Restart everything
 
 When Bluetooth gets stuck ("device busy", a worker that won't reconnect, an old release still
@@ -598,6 +624,49 @@ holding a radio), **sidebar → Restart → Restart everything** clears it in on
 - **Starting again:** services that were running are started; dashboards started by hand come back
   in the background (output in `~/.cache/bio-dash/logs/`). Omni needs sudo, so start it yourself.
 - Same access rule as Reboot: from this computer only, unless the dashboards run with `BIODASH_ALLOW_POWER=1`.
+
+## Recordings from your other machines
+
+`tools/fleet.py` finds Bio-dash recordings on your other computers over Tailscale and SSH, pulls
+them here, and can push them to a cloud. Nothing is installed on the other machines (they need `python3`, which Ubuntu has).
+
+```bash
+./tools/fleet.py list                    # machines on your tailnet, and which are online
+./tools/fleet.py check                   # what each online machine has recorded
+./tools/fleet.py pull                    # copy what's new from all of them
+./tools/fleet.py pull roomba ubuntu-1 --since 2026-10-01 --only polar,hydro
+./tools/fleet.py pull --merge            # into this computer's own recordings folder
+```
+
+- **Which machines:** the online ones in `tailscale status` tagged `tag:ssh` (`--tag ""` for all of
+  them), or the ones you name (`user@host` works, and then Tailscale isn't needed). This computer is
+  skipped. It uses plain `ssh` (Tailscale SSH, a normal SSH server and `~/.ssh/config` all work);
+  `--user` if your user name differs there. If a machine asks you to log in or approve the
+  connection, run `ssh <machine>` once by hand.
+- **Where they go:** `Documents/Bio-dash-machines/<machine>/`, laid out like a recordings folder, so
+  `BIODASH_DATA_DIR=~/Documents/Bio-dash-machines/roomba python3 tools/interpolate.py --list` (or the
+  analysis dashboard with the same variable) reads one machine. `--merge` puts them in this computer's
+  own recordings folder instead: a file already here is only replaced by a longer copy of itself (a
+  recording that kept growing, checked byte for byte), and a different recording with the same name
+  goes in a device folder of its own, `<device> @<machine>`, so nothing here is overwritten.
+- **Only what's new or has grown is copied** (rsync when both sides have it, otherwise tar over
+  ssh), so running it again is quick. `--dry-run` shows what it would copy; `Exports/` and
+  `Reports/` are left out.
+- **Pushing online:** `./tools/fleet.py push --to gdrive:Bio-dash` uploads the raw recordings with
+  [rclone](https://rclone.org), so any cloud it knows works (Google Drive, Dropbox, OneDrive, S3,
+  Backblaze B2, Nextcloud ...). Set one up once with `rclone config` (`sudo apt install rclone`); the
+  name you give it goes before the colon. This computer's recordings go to `<dest>/<this computer>/`
+  and each pulled machine to `<dest>/<machine>/`. Only new and grown files go up, nothing online is
+  ever deleted, and `--to` is remembered, so later it's just `./tools/fleet.py push --pull-first`
+  (pull from every machine, then upload). These are health recordings: put an rclone **crypt**
+  remote on top of the cloud one and they're encrypted, names included, before they leave.
+- **Uploading by itself:** `./tools/fleet.py schedule` sets up two timers (systemd, your user):
+  every 5 minutes everything except the ECG and motion waveforms, and every hour everything. A
+  recording grows for as long as its session lasts and a grown file goes up whole again, so a
+  night's ECG (~11 MB an hour) every 5 minutes would be gigabytes an hour; heart rate, SpO₂, air and
+  water are small. `--every 10min`, `--full-every 6h`, `--skip ""` (everything every time) change
+  that; `schedule --off` stops it. Run `sudo loginctl enable-linger $USER` once so it keeps going
+  when you're logged out, and run `schedule` again from the new folder after an upgrade.
 
 ## What's around: a standalone Bluetooth scanner
 

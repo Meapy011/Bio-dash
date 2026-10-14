@@ -28,6 +28,18 @@ V5.2 plus an export made for ReaLLM-Forge, and one button to restart everything:
   connection fails is passed over for 10 minutes, or for a week (remembered across restarts) when
   the bottle's service list came back empty through it, the Bluetooth 4.0 problem. The pin could lock
   onto the wrong radio now and then. Pinning is still in the debug panel; old pins don't carry over.
+- **`tools/fleet.py`: recordings from your other machines.** `check` lists what each online
+  Tailscale machine (tagged `tag:ssh`) has recorded; `pull` copies what's new or has grown, into one
+  folder per machine or (`--merge`) into this computer's recordings without overwriting anything.
+  Plain ssh, nothing installed on the other side. `push --to gdrive:Bio-dash` uploads the raw
+  recordings (this computer's and every pulled machine's) to any cloud rclone knows: new and grown
+  files only, nothing online deleted, the destination remembered (`push --pull-first` does both).
+  `schedule` uploads by itself (systemd user timers): every 5 min without the ECG / motion
+  waveforms, everything hourly, one upload at a time. `tools/test_fleet.py`: 33 checks with
+  stand-in machines and a real rclone.
+- **`tools/export_ecg.py`: just the ECG.** The raw samples with their timestamps, and an even
+  200 Hz (no timestamps, interpolated linear or cubic within each unbroken stretch, a stretches file
+  saying where the gaps were); `--uv` for whole microvolts. `tools/test_export_ecg.py`: 18 checks.
 - Each export comes with `<name>.columns.json` (scales, ranges, "no reading" values) and
   `<name>.prepare.sh`, which runs `get_dataset.sh` with every `--range` filled in.
   `tools/export_mcint.py --forge ~/ReaLLM-Forge` builds the datasets in one go.

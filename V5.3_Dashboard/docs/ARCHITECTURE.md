@@ -472,6 +472,182 @@ flowchart LR
   a fixed scale and range per signal, `minute_of_day` / `second` for the time, and one value below
   each range (`-1`) for "no reading", because `csv_mc_int` allows no blank cells.
 
+### Just the ECG (`tools/export_ecg.py`), step by step
+
+The raw file keeps every sample as recorded; the 200 Hz file is resampled stretch by stretch and
+never across a gap.
+
+```mermaid
+flowchart TB
+    R[("ECG recordings on disk<br/>Polar H10/&lt;strap&gt;/&lt;date&gt;/&lt;time&gt;#95;ecg.csv<br/>Omni/&lt;strap&gt;/&lt;date&gt;/&lt;time&gt;#95;ecg.csv<br/>Timestamp_Epoch_ms, ECG_mV · 130 Hz · never changed")]
+
+    subgraph S1["1 · Read and merge"]
+        direction TB
+        A1["Pick the files<br/>day or --from/--to · --device"]
+        A2["Read each file<br/>zero bytes stripped · bad rows skipped<br/>only the ECG_mV column"]
+        A3["Merge in time order<br/>(heapq merge of all files)"]
+        A4{"Less than half a period<br/>(3.8 ms) after the<br/>last kept sample?"}
+        A5["Keep"]
+        X1["Dropped<br/>same strap recorded twice<br/>(Polar-dash + Omni)"]
+        A1 --> A2 --> A3 --> A4
+        A4 -->|no| A5
+        A4 -->|yes| X1
+    end
+
+    RAW[/"&lt;name&gt;_raw.csv<br/>Timestamp_Epoch_ms, ECG_mV<br/>every sample, values unchanged"/]
+
+    subgraph S2["2 · Find unbroken stretches"]
+        direction TB
+        B1{"Step to the next sample<br/>&gt; 3 periods (~23 ms)<br/>or backwards?"}
+        B2["Same stretch"]
+        B3["New stretch<br/>gap noted"]
+        B4{"Stretch shorter than<br/>--min-stretch (10 s)?"}
+        X2["Left out"]
+        B1 -->|no| B2
+        B1 -->|yes| B3
+        B2 & B3 --> B4
+        B4 -->|yes| X2
+    end
+
+    subgraph S3["3 · Resample each stretch to 200 Hz"]
+        direction TB
+        C1["Sample times from position<br/>t_i = first + i × measured spacing<br/>(removes the 7/8 ms rounding jitter)"]
+        C2{"--method"}
+        C3["linear<br/>never overshoots"]
+        C4["cubic (Catmull-Rom)<br/>~3× closer on QRS peaks"]
+        C5["Every 5 ms from the stretch start<br/>nothing invented across gaps"]
+        C1 --> C2
+        C2 --> C3 & C4
+        C3 & C4 --> C5
+    end
+
+    U{"--uv?"}
+    U1["mV, up to 4 decimals"]
+    U2["whole µV, clipped ±10000<br/>prints csv_mc_int --range"]
+
+    HZ[/"&lt;name&gt;_200hz.csv<br/>ECG only, no timestamp<br/>row k = k/200 s into its stretch"/]
+    ST[/"&lt;name&gt;_200hz_stretches.csv<br/>first row · rows · start time<br/>gap before · recorded Hz"/]
+    SP[/"--split: one file per stretch<br/>&lt;name&gt;_200hz_001.csv …"/]
+
+    R --> A1
+    A5 --> RAW
+    A5 --> B1
+    B4 -->|no| C1
+    C5 --> U
+    RAW -.->|"--uv applies here too"| U
+    U -->|no| U1 --> HZ
+    U -->|yes| U2 --> HZ
+    C5 --> ST
+    HZ -.->|--split| SP
+
+    W1["⚠ the 200 Hz file has no timestamps:<br/>the stretches file is the only record<br/>of where the gaps were"]
+    ST -.- W1
+
+    classDef store fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px
+    classDef worker fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px
+    classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
+    classDef app fill:#CCFBF1,stroke:#0D9488,color:#134E4A,stroke-width:2px
+    classDef file fill:#F1F5F9,stroke:#64748B,color:#1E293B,stroke-width:2px
+    classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
+    classDef gone fill:#F8FAFC,stroke:#94A3B8,color:#64748B,stroke-dasharray:4 3
+    class R store
+    class A1,A2,A3,A5,B2,B3,C1,C5 worker
+    class A4,B1,B4,C2,U decision
+    class C3,C4,U1,U2 app
+    class RAW,HZ,ST,SP file
+    class W1 warn
+    class X1,X2 gone
+    style S1 fill:#F8FAFC,stroke:#CBD5E1
+    style S2 fill:#F8FAFC,stroke:#CBD5E1
+    style S3 fill:#F8FAFC,stroke:#CBD5E1
+```
+
+### The ReaLLM-Forge export, step by step
+
+Everything happens when you export; the recordings are never changed. Red notes are the things to
+know before training on it (`--max-gap 0 --hold 0 --real-flags` keeps it to real readings).
+
+```mermaid
+flowchart TB
+    R[("Recordings on disk<br/>&lt;dashboard&gt;/&lt;device&gt;/&lt;date&gt;/*.csv<br/>never changed")]
+
+    subgraph S1["1 · Read: load_signals"]
+        direction TB
+        A1["Clean<br/>zero bytes stripped · bad rows skipped<br/>timestamps → ms"]
+        A2{"Sane range?<br/>HR 25–230 · RR 300–2000<br/>SpO₂ 50–100 · sip 1–2000 mL"}
+        A3["Merge dashboards<br/>Polar + Omni = one heart rate<br/>one value per timestamp"]
+        A4["Derived signals<br/>HR = 60000/RR (Omni)<br/>RMSSD per minute (skip &gt;20 % jumps)<br/>sips de-duplicated (±10 mL, 2 s) + daily total"]
+        A1 --> A2
+        A2 -->|yes| A3 --> A4
+        A2 -->|no| X1["dropped"]
+    end
+
+    subgraph S2["2 · One clock: resample"]
+        direction TB
+        K{"Kind of signal<br/>(one value per --step)"}
+        M["Readings<br/>mean of the step<br/>empty step: straight line<br/>if gap ≤ --max-gap (60 s)"]
+        H["Levels (bottle fill)<br/>last value carried<br/>up to 30 min"]
+        E["Sips<br/>mL per step · 0 while recording<br/>daily total held to midnight"]
+        K --> M & H & E
+    end
+
+    subgraph S3["3 · Integers: mcint.build"]
+        direction TB
+        B1["Scale · round · clip to a fixed range<br/>temp_c_x10 −400…850, hr_bpm 0…250 …"]
+        B2["Hold readings across gaps<br/>≤ --hold (2 min)"]
+        B3{"Still empty?"}
+        B4["−1  (one below the range)<br/>or --missing drop: row left out"]
+        B5["minute_of_day (+ second)<br/>rows with no device at all left out"]
+        B1 --> B2 --> B3
+        B3 -->|yes| B4 --> B5
+        B3 -->|no| B5
+    end
+
+    OUT[/"Export folder<br/>&lt;name&gt;.csv · .columns.json · .prepare.sh"/]
+
+    subgraph S4["4 · Forge: get_dataset.sh"]
+        direction TB
+        F1["token = value − int_min<br/>one vocabulary per column"]
+        F2["split by row order<br/>first 90 % train · last 10 % val"]
+        F1 --> F2
+    end
+
+    BIN[("train.bin · val.bin · meta.pkl<br/>per column + manifest.json")]
+
+    R --> A1
+    A4 --> K
+    M & H & E --> B1
+    B5 --> OUT --> F1
+    F2 --> BIN
+
+    W1["⚠ up to ~3 min of each gap is made up<br/>(60 s line + 2 min hold) · --real-flags marks it<br/>--max-gap 0 --hold 0 for real data only"]
+    W2["⚠ averaging hides beat-to-beat R-R<br/>at 10 s steps · use 1 s or hrv_rmssd_ms"]
+    W3["⚠ time jumps where rows are left out<br/>no date column · DST repeats/skips an hour"]
+    M -.- W1
+    B2 -.- W1
+    M -.- W2
+    B5 -.- W3
+
+    classDef store fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px
+    classDef worker fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px
+    classDef decision fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:2px
+    classDef app fill:#CCFBF1,stroke:#0D9488,color:#134E4A,stroke-width:2px
+    classDef file fill:#F1F5F9,stroke:#64748B,color:#1E293B,stroke-width:2px
+    classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px
+    classDef gone fill:#F8FAFC,stroke:#94A3B8,color:#64748B,stroke-dasharray:4 3
+    class R,BIN store
+    class A1,A3,A4,M,H,E,B2,B5,F1,F2 worker
+    class A2,K,B3 decision
+    class B1,B4 app
+    class OUT file
+    class W1,W2,W3 warn
+    class X1 gone
+    style S1 fill:#F8FAFC,stroke:#CBD5E1
+    style S2 fill:#F8FAFC,stroke:#CBD5E1
+    style S3 fill:#F8FAFC,stroke:#CBD5E1
+    style S4 fill:#F8FAFC,stroke:#CBD5E1
+```
+
 ---
 
 ## 9. Radios on the Orin: what plugs in where

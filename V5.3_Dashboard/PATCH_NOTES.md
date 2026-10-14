@@ -1,4 +1,4 @@
-# V5.3: an integer CSV export for ReaLLM-Forge, and Restart everything
+# tools/export_ecg.py: just the ECG, raw with timestamps and an even 200 Hz; fleet.py pulls and pushes recordings
 - Analysis page: "For ReaLLM-Forge" downloads the selected signals as an integer CSV that data/csv_mc_int takes as it is
 - Whole numbers everywhere: decimals kept by scaling (temp_c_x10), time as minute_of_day and second, -1 = not recording
 - Fixed range per signal, so exports from different days share vocabularies and train together
@@ -8,3 +8,5 @@
 - Sidebar -> Restart -> Restart everything (or ./restart_all.py): stops every dashboard and Bluetooth worker from any release, resets Bluetooth, starts again what was running
 - Hydro: after "It's empty now" a banner stays up until "It's full now" (the bottle counts no sips until it has both)
 - Hydro isn't pinned to a radio: every radio listens and the one that hears the bottle best connects (failed radios are passed over)
+- tools/fleet.py: check your Tailscale machines for recordings, pull what's new, push to a cloud with rclone, and schedule uploads (every 5 min; ECG hourly)
+- tools/export_ecg.py: the ECG on its own, raw with timestamps and resampled to 200 Hz without (--uv for csv_mc_int)
