@@ -1,5 +1,22 @@
 # Changelog
 
+## V5.3
+
+V5.2 plus an export made for ReaLLM-Forge:
+
+- **For ReaLLM-Forge:** the analysis page's new button (and `tools/export_mcint.py`) writes the
+  signals on one clock as an integer CSV that ReaLLM-Forge's `data/csv_mc_int` takes as it is: a
+  whole number in every cell, decimals kept by scaling (`temp_c_x10`), the time as `minute_of_day`
+  and `second`, a fixed range per signal so different days share vocabularies, and `-1` where a
+  device wasn't recording (csv_mc_int allows no blanks). Short gaps are held at the last reading
+  first; `--missing drop` leaves incomplete rows out instead.
+- Each export comes with `<name>.columns.json` (scales, ranges, "no reading" values) and
+  `<name>.prepare.sh`, which runs `get_dataset.sh` with every `--range` filled in.
+  `tools/export_mcint.py --forge ~/ReaLLM-Forge` builds the datasets in one go.
+- `tools/mcint_decode.py` turns what `sample.py` generates back into real units.
+- `analysis_dashboard/test_mcint.py`: 29 checks against hand-worked values; with `FORGE=` set it also
+  runs ReaLLM-Forge's own prepare script on the result.
+
 ## V5.2
 
 Themes for every dashboard, and everything patched into V5.0 since its release (the Bluetooth scanner, water calculations with the
