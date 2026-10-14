@@ -575,6 +575,30 @@ Then train and sample with ReaLLM-Forge's demo:
 `CSV_MC_OUTPUT_ROOT=bio_dash_mcint bash demos/csv_mc_int_demo.sh <name>.csv`
 (it uses the CSV as the sampling prompt, so a short export, an hour say, makes a better prompt).
 
+## Restart everything
+
+When Bluetooth gets stuck ("device busy", a worker that won't reconnect, an old release still
+holding a radio), **sidebar → Restart → Restart everything** clears it in one go. From a terminal:
+
+```bash
+./restart_all.py                 # stop everything, reset Bluetooth, start again
+./restart_all.py --stop          # stop everything and leave it stopped
+./restart_all.py --no-bluetooth  # leave Bluetooth alone
+./restart_all.py --dry-run       # show what it would stop and start
+```
+
+- **What it stops:** every `biodash-*` service, and every process running a script from any
+  `V*_Dashboard` folder (dashboards, Bluetooth workers, their helpers), whichever release and however
+  it was started. An editor or a terminal open in the folder is left alone, and so is the updater.
+- **Gently first:** Ctrl+C (recordings close properly), then SIGTERM after 6 s, then SIGKILL.
+- **Bluetooth:** restarts the bluetooth service if allowed without a password, otherwise disconnects
+  every connected device and switches each radio off and on. Headphones or a keyboard on Bluetooth
+  drop for a few seconds and reconnect. To let it restart the service, run once:
+  `echo "$USER ALL=(root) NOPASSWD: $(command -v systemctl) restart bluetooth" | sudo tee /etc/sudoers.d/biodash-bluetooth && sudo chmod 440 /etc/sudoers.d/biodash-bluetooth`
+- **Starting again:** services that were running are started; dashboards started by hand come back
+  in the background (output in `~/.cache/bio-dash/logs/`). Omni needs sudo, so start it yourself.
+- Same access rule as Reboot: from this computer only, unless the dashboards run with `BIODASH_ALLOW_POWER=1`.
+
 ## What's around: a standalone Bluetooth scanner
 
 `tools/ble_scan.py` lists every Bluetooth LE device the radio hears, with its signal, address type

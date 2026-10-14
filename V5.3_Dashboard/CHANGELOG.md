@@ -2,7 +2,7 @@
 
 ## V5.3
 
-V5.2 plus an export made for ReaLLM-Forge:
+V5.2 plus an export made for ReaLLM-Forge, and one button to restart everything:
 
 - **For ReaLLM-Forge:** the analysis page's new button (and `tools/export_mcint.py`) writes the
   signals on one clock as an integer CSV that ReaLLM-Forge's `data/csv_mc_int` takes as it is: a
@@ -10,6 +10,15 @@ V5.2 plus an export made for ReaLLM-Forge:
   and `second`, a fixed range per signal so different days share vocabularies, and `-1` where a
   device wasn't recording (csv_mc_int allows no blanks). Short gaps are held at the last reading
   first; `--missing drop` leaves incomplete rows out instead.
+- **Restart everything** (sidebar → Restart, or `./restart_all.py`): stops every Bio-dash dashboard
+  and Bluetooth worker on the computer, from any release folder, as a service or started by hand
+  (an old release still running in another folder is caught too); resets Bluetooth; then starts
+  again whatever was running. Workers get Ctrl+C first so recordings close properly, then SIGTERM,
+  then SIGKILL. Bluetooth: the bluetooth service is restarted if that's allowed without a password
+  (a sudoers line is offered), otherwise every connected device is disconnected and each radio
+  switched off and on. "Reset Bluetooth too" can be unticked. Hand-started dashboards come back in
+  the background with their output in `~/.cache/bio-dash/logs/`; Omni needs sudo so it's left for
+  you. Same access rule as Reboot: this computer only, unless `BIODASH_ALLOW_POWER=1`.
 - Each export comes with `<name>.columns.json` (scales, ranges, "no reading" values) and
   `<name>.prepare.sh`, which runs `get_dataset.sh` with every `--range` filled in.
   `tools/export_mcint.py --forge ~/ReaLLM-Forge` builds the datasets in one go.

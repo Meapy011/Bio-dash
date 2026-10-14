@@ -142,5 +142,15 @@ def system_update():
     return jsonify(out), code
 
 
+# ---------- restart everything (sidebar "Power"; the work is done by ../restart_all.py) ----------
+@app.route("/api/system/restart", methods=["GET", "POST"])
+def system_restart():
+    host = request.remote_addr or ""
+    if request.method == "GET":
+        return jsonify(bt_debug.restart_info(host))
+    code, out = bt_debug.system_restart(request.get_json(silent=True) or {}, host, request.headers.get(bt_debug.POWER_HEADER))
+    return jsonify(out), code
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5003, debug=False, threaded=True)   # 5000 is Omni

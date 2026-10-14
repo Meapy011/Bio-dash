@@ -91,6 +91,7 @@
             <div class="sb-h">View</div><div id="sb-view"></div>
             <div class="sb-h">Theme</div><div class="sb-themes" id="sb-theme" role="group" aria-label="Theme"></div>
             <div class="sb-h">Updates</div><div class="sb-box" id="sb-update"></div>
+            <div class="sb-h">Restart</div><div class="sb-box" id="sb-restart"></div>
             <div class="sb-h">Power</div><div class="sb-box" id="sb-power"></div>
         </div>
         <div id="sb-foot"></div>`;
@@ -295,6 +296,73 @@
     });
     paintUpdate();
     loadUpdate(false);
+
+    // ---------------------------------------------------------------- restart everything
+    const rst = sb.querySelector('#sb-restart');
+    let rinfo = null, rbt = true, rrun = null, rnote = null;
+    function paintRestart() {
+        const ok = rinfo && rinfo.allowed;
+        if (rrun) {
+            const st = rrun.status;
+            const lines = st && st.log ? st.log.slice(-4) : [];
+            const done = st && st.state !== 'running';
+            rst.innerHTML = `<div class="sb-note ${done ? (st.state === 'failed' ? 'err' : st.problems ? 'warn' : 'ok') : 'warn'}" style="margin:0">
+                ${done ? esc(st.stage) : rrun.down ? 'Dashboards stopping and starting… this page reconnects by itself.' : esc(st ? st.stage : 'Starting…')}</div>
+                ${lines.length ? `<ul class="sb-notes" style="margin-top:6px;overflow-wrap:anywhere;font-size:11px">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
+                ${done && st.bt_fix ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11.5px;color:#94a3b8">Let it restart the bluetooth service</summary>
+                    <div class="sb-note" style="margin-top:6px">Run once on this computer:</div><pre class="sb-pre">${esc(st.bt_fix)}</pre></details>` : ''}
+                ${done ? `<button class="sb-btn" data-rst="reload">Reload this page</button>` : ''}`;
+            return;
+        }
+        rst.innerHTML = `${rinfo && !ok ? `<div class="sb-note warn">${esc(rinfo.reason)}</div>` : ''}
+            <button class="sb-btn ${armed === 'restart' ? 'armed' : ''}" data-rst="go" ${ok ? '' : 'disabled'}>${armed === 'restart' ? 'Confirm: restart everything?' : '↻ Restart everything'}</button>
+            <label class="sb-note" style="display:flex;gap:6px;align-items:center;margin:6px 0 0;cursor:pointer">
+                <input type="checkbox" data-rst="bt" ${rbt ? 'checked' : ''}> Reset Bluetooth too</label>
+            <div class="sb-note" style="margin:4px 0 0">Stops every dashboard and Bluetooth worker (any release, service or not)${rbt ? ', resets the radios' : ''}, then starts them again. Recording pauses for about half a minute${rbt ? '; headphones or a keyboard on Bluetooth drop briefly and reconnect' : ''}.</div>
+            ${rnote ? `<div class="sb-note ${rnote.cls}" style="margin:8px 0 0">${esc(rnote.text)}</div>` : ''}`;
+    }
+    async function loadRestart() {
+        try { rinfo = await (await fetch('/api/system/restart', { cache: 'no-store' })).json(); } catch (e) {}
+        paintRestart();
+    }
+    async function pollRestart() {
+        if (!rrun) return;
+        try {
+            const r = await (await fetch('/api/system/restart', { cache: 'no-store' })).json();
+            if (r.status && r.status.started >= rrun.started - 2) { rrun.status = r.status; rrun.down = false; }
+        } catch (e) { rrun.down = true; }
+        paintRestart();
+        const st = rrun.status;
+        if (st && st.state !== 'running') {
+            if (st.state === 'done' && !st.problems && !rrun.reloaded && Date.now() - rrun.t0 < 180000) {
+                rrun.reloaded = true; setTimeout(() => location.reload(), 2500);
+            }
+            return;
+        }
+        if (Date.now() - rrun.t0 > 180000) { rrun.status = { state: 'failed', stage: 'No word from the restart after 3 minutes. Is this dashboard still running?', log: (st && st.log) || [] }; return paintRestart(); }
+        setTimeout(pollRestart, 1500);
+    }
+    rst.addEventListener('change', (e) => { if (e.target.matches('[data-rst="bt"]')) { rbt = e.target.checked; paintRestart(); } });
+    rst.addEventListener('click', async (e) => {
+        const b = e.target.closest('button[data-rst]');
+        if (!b) return;
+        if (b.dataset.rst === 'reload') return location.reload();
+        if (!rinfo || !rinfo.allowed || rrun) return;
+        if (!arm('restart', paintRestart)) return;
+        let res = null, out = {};
+        try { res = await fetch('/api/system/restart', { method: 'POST', headers: HEADER, body: JSON.stringify({ bluetooth: rbt }) }); out = await res.json(); }
+        catch (err) { out = { error: 'No reply from the dashboard.' }; }
+        if (res && res.ok) {
+            rrun = { started: out.started, t0: Date.now(), status: null, down: false };
+            paintRestart();
+            setTimeout(pollRestart, 1500);
+        } else {
+            rnote = { cls: 'err', text: out.error || 'Refused.' };
+            paintRestart();
+        }
+    });
+    paintRestart();
+    loadRestart();
 
     // ---------------------------------------------------------------- power
     const pow = sb.querySelector('#sb-power');

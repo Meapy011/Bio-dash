@@ -606,3 +606,55 @@ def system_update(action, client_host, header_value):
     subprocess.Popen(cmd, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      cwd=os.path.dirname(UPDATER))
     return 200, {"ok": True, "action": action, "started": started}
+
+# ---------------------------------------------------------------------------
+# Restart everything (sidebar "Power" section) -- the work is done by ../restart_all.py
+# ---------------------------------------------------------------------------
+# Same access rule as shutdown / reboot: this computer only, unless BIODASH_ALLOW_POWER=1.
+RESTARTER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "restart_all.py")
+RESTART_STATUS = os.path.join(os.path.expanduser("~"), ".cache", "bio-dash", "restart.json")
+
+
+def restart_info(client_host):
+    allowed, reason = _power_allowed(client_host)
+    try:
+        with open(RESTART_STATUS) as f:
+            status = json.load(f)
+    except (OSError, ValueError):
+        status = None
+    return {"allowed": allowed and os.path.isfile(RESTARTER), "reason": reason,
+            "status": status, "host": socket.gethostname()}
+
+
+def system_restart(options, client_host, header_value):
+    """(http_status, json): stop every dashboard and worker, reset Bluetooth, start again.
+    Runs outside this dashboard (which it stops too), so the reply goes out first."""
+    if header_value != "1":
+        return 403, {"error": "missing confirmation header"}
+    allowed, reason = _power_allowed(client_host)
+    if not allowed:
+        return 403, {"error": reason}
+    if not os.path.isfile(RESTARTER):
+        return 409, {"error": "restart_all.py is missing from this release"}
+    try:
+        with open(RESTART_STATUS) as f:
+            st = json.load(f)
+        if st.get("state") == "running" and st.get("pid") and os.path.exists(f"/proc/{int(st['pid'])}"):
+            return 409, {"error": "a restart is already running"}
+    except (OSError, ValueError, TypeError):
+        pass
+    args = ["--quiet"]
+    if not (options or {}).get("bluetooth", True):
+        args.append("--no-bluetooth")
+    if os.environ.get("BIODASH_POWER_DRY_RUN") == "1":
+        args.append("--dry-run")
+    started = int(time.time())
+    # wait a moment so this reply reaches the browser before the dashboards stop
+    cmd = ["sh", "-c", 'sleep 1; exec "$0" "$@"', sys.executable, RESTARTER, *args]
+    # As a service, run outside this service's control group, or stopping it would stop the restart.
+    if os.environ.get("BIODASH_SERVICE") == "1" and shutil.which("systemd-run"):
+        cmd = ["systemd-run", "--user", "--collect", "--quiet", f"--unit=biodash-restart-{started}", *cmd]
+    subprocess.Popen(cmd, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     cwd=os.path.dirname(RESTARTER))
+    return 200, {"ok": True, "started": started, "dry_run": "--dry-run" in args}
+

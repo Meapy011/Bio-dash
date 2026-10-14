@@ -340,6 +340,23 @@ async def update(request: Request):
     return JSONResponse(out, status_code=code)
 
 
+@app.get("/api/system/restart")
+def restart_info(request: Request):
+    return bt_debug.restart_info(request.client.host if request.client else "")
+
+
+@app.post("/api/system/restart")
+async def restart_all(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    code, out = await run_in_threadpool(bt_debug.system_restart, body if isinstance(body, dict) else {},
+                                        request.client.host if request.client else "",
+                                        request.headers.get(bt_debug.POWER_HEADER))
+    return JSONResponse(out, status_code=code)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=5002, reload=False)
