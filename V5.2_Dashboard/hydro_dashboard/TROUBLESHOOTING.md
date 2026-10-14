@@ -318,9 +318,9 @@ uses the default radio.
 | Ten cold connects (the section 12 bug) | `for i in $(seq 10); do python3 hydro_test.py dump <name> --adapter $UB 2>&1 \| grep -c "✅"; sleep 5; done` | **6** every time: "✅ Connected" plus the 5 protocol characteristics. The old bug gives 0 or 1 |
 | Which radio the dashboard uses | `hcitool -i $UB con` while Hydro-dash is connected | lists the bottle |
 
-**Wrong name, all zeros.** The tools match the bottle's name exactly: `h2o00003095` is not
-`h2o000003095`. A run that never connects prints no ✅ at all, so a typo looks exactly like a dead
-radio. The tools now list the bottle-like names they did see ("Seen instead: h2o00003095 <- did you
+**Wrong name, all zeros.** The tools match the bottle's name exactly: `h2o00001234` is not
+`h2o000001234`. A run that never connects prints no ✅ at all, so a typo looks exactly like a dead
+radio. The tools now list the bottle-like names they did see ("Seen instead: h2o00001234 <- did you
 mean this one?"), and `tools/ble_scan.py` shows every name in range.
 
 ### 14. The Orin won't power on with a UB500 Plus and an ASUS BT400 plugged in

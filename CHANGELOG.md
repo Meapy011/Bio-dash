@@ -2,7 +2,7 @@
 
 ## V5.2
 
-Everything patched into V5.0 since its release (the Bluetooth scanner, water calculations with the
+Themes for every dashboard, and everything patched into V5.0 since its release (the Bluetooth scanner, water calculations with the
 local weather, the Bluetooth 5 dongle confirmation, power-cut protection; see V5.0 below), gathered
 into one release, plus what a night of testing radios on the Jetson Orin taught us:
 
@@ -21,12 +21,17 @@ into one release, plus what a night of testing radios on the Jetson Orin taught 
   file, its checksum and how to install it (ASUS BT400 goes from build 0000 to 1467).
   TROUBLESHOOTING 15.
 - **`hydro_test.py` says when the name is almost right:** a run that doesn't find the bottle lists
-  the bottle-like names it did see ("Seen instead: h2o00003095 <- did you mean this one?"). A
+  the bottle-like names it did see ("Seen instead: h2o00001234 <- did you mean this one?"). A
   one-character typo in the name had made a working radio look dead.
 - **Powering the Orin from USB-C:** why a 12 V trigger board works with some chargers only (12 V is
   optional in USB Power Delivery; 20 V is required above 45 W). ARCHITECTURE section 9.
 - Radio pins and the last device carry across upgrades (the updater copies them); the docs now say
   so, instead of warning that they reset.
+- **Themes for every dashboard:** Auto (follows the device's light / dark setting), Dark, Light,
+  OLED black, High contrast and Warm night, picked under **Theme** in the sidebar. One choice
+  applies to all six dashboards (a cookie shared by every port; open dashboards follow within
+  seconds). Chart axes and grids and the ECG monitor are recoloured to match; data colours keep
+  their meaning. `static/js/themes.js` + `static/css/themes.css`, the same in every dashboard.
 
 ## V5.0
 

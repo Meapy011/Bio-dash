@@ -74,8 +74,10 @@ polar_dashboard/
     ├── js/ecg_view.js      # (Polar, Omni) 🩺 Monitor / 📈 Classic ECG toggle
     ├── js/tile_trends.js   # tap-a-tile trend graphs (all dashboards; shared module)
     ├── js/debug_panel.js   # 🐞 debug panel (Polar, Viatom, Atmos)
-    ├── js/sidebar.js       # sidebar: dashboard links, debug, keep-awake, updates, power (all dashboards)
+    ├── js/sidebar.js       # sidebar: dashboard links, debug, keep-awake, theme, updates, power (all dashboards)
+    ├── js/themes.js        # picks the theme (cookie shared by every port) and recolours chart axes (all dashboards)
     ├── css/tailwind.css    # compiled Tailwind (all dashboards)
+    ├── css/themes.css      # the themes: Light, OLED black, High contrast, Warm night (all dashboards)
     └── vendor/             # Chart.js, Luxon, adapter, streaming plugin
 ```
 
@@ -379,11 +381,32 @@ Everything that used to sit in the top bar lives in a sidebar, the same in every
 
 - **Dashboards:** links to the others that are running, in port order. A dashboard that isn't running isn't listed.
 - **View:** the 🐞 debug panel (still **D**) and **☀ Keep screen on**.
+- **Theme:** see below.
 - **Updates** and **Power:** see the next two sections.
 
 It's closed when a page opens: **☰** in the header opens it (beside the page on wide screens,
 as a slide-over drawer on phones and narrow windows) and **«** hides it again. The header keeps only the
 dashboard's title and its connection status.
+
+### Themes (sidebar)
+
+![Hydro-dash in the five themes](docs/themes.png)
+
+Pick one under **Theme** in the sidebar; it applies to every dashboard at once (it's saved in a
+cookie, which all the dashboard ports on a computer share), and dashboards already open follow
+within a couple of seconds.
+
+| Theme | For |
+|---|---|
+| **Auto** (default) | Light or Dark, following the phone's or computer's own setting, and switching when it does |
+| **Dark** | the original slate look |
+| **Light** | bright rooms and daytime; the ECG monitor turns into red-gridded ECG paper |
+| **OLED black** | true black: OLED screens switch those pixels off, so it's easier on the battery and the eyes at night |
+| **High contrast** | bold borders, brighter text and accents, a yellow focus ring: readable at a glance or from across a room |
+| **Warm night** | dim amber over OLED black, easy on eyes adjusted to the dark (charts too) |
+
+Data colours keep their meaning in every theme (heart is still blue, oxygen orange, ...); only
+the page, text, borders and chart axes change.
 
 ### Updates (sidebar)
 

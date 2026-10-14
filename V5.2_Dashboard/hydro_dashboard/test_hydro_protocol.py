@@ -276,10 +276,10 @@ def test_name_hint():
     sys.modules.setdefault("bleak", types.SimpleNamespace(BleakClient=None, BleakScanner=None))
     import hydro_test as ht
     # the typo from the UB500 test night: five zeros asked for, four advertised
-    hint = ht.name_hint("h2o000003095", {"h2o00003095", "", "Pixel 8"})
-    assert "h2o00003095" in hint and "did you mean" in hint
-    assert ht.name_hint("h2o00003095", {"Pixel 8", ""}) == ""
-    assert "h2o00003095" in ht.name_hint("my bottle", {"h2o00003095"})
+    hint = ht.name_hint("h2o000001234", {"h2o00001234", "", "Pixel 8"})
+    assert "h2o00001234" in hint and "did you mean" in hint
+    assert ht.name_hint("h2o00001234", {"Pixel 8", ""}) == ""
+    assert "h2o00001234" in ht.name_hint("my bottle", {"h2o00001234"})
 
 
 if __name__ == "__main__":

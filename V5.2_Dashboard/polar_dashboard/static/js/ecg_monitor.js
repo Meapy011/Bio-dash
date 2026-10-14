@@ -23,7 +23,7 @@ class EcgMonitor {
         this.PLAY_DELAY_MS = 900;   // must exceed the ~560 ms PMD frame spacing
         this.GAP_FRAC = 0.025;      // width of the erase bar ahead of the pen
         // Defaults match the dashboard: slate-800 screen, rose-500 trace
-        this.theme = {
+        this.baseTheme = {
             trace: '#f43f5e',
             glow: 'rgba(244, 63, 94, 0.55)',
             background: '#1e293b',
@@ -31,6 +31,9 @@ class EcgMonitor {
             gridMajor: 'rgba(148, 163, 184, 0.16)',
             ...theme,
         };
+        // follow the page theme (themes.js): ECG paper in Light, true black in OLED / Warm night
+        this.theme = this._pageTheme();
+        window.addEventListener('biodash-theme', () => { this.theme = this._pageTheme(); if (this.W) this._drawGrid(); });
 
         this.gainModes = ['AUTO', 5, 10, 20];   // mm per mV
         this.gainIdx = 0;
@@ -55,6 +58,18 @@ class EcgMonitor {
         new ResizeObserver(this._resize).observe(this.trace.parentElement);
         this._resize();
         requestAnimationFrame(this._frame.bind(this));
+    }
+
+    _pageTheme() {
+        const by = {
+            light:    { background: '#fff5f5', gridMinor: 'rgba(225, 29, 72, 0.10)', gridMajor: 'rgba(225, 29, 72, 0.24)',
+                        trace: '#be123c', glow: 'rgba(190, 18, 60, 0.25)' },
+            oled:     { background: '#000000' },
+            warm:     { background: '#000000' },
+            contrast: { background: '#000000', gridMinor: 'rgba(255, 255, 255, 0.10)', gridMajor: 'rgba(255, 255, 255, 0.26)',
+                        trace: '#fb7185', glow: 'rgba(251, 113, 133, 0.6)' },
+        }[document.documentElement.dataset.theme] || {};
+        return { ...this.baseTheme, ...by };
     }
 
     get gainLabel() {

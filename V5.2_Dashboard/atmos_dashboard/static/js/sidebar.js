@@ -26,50 +26,56 @@
     const css = document.createElement('style');
     css.textContent = `
     :root{--sb-w:236px}
-    #sb{position:fixed;inset:0 auto 0 0;width:var(--sb-w);z-index:40;background:#0f172a;border-right:1px solid #1e293b;
+    #sb{position:fixed;inset:0 auto 0 0;width:var(--sb-w);z-index:40;background:var(--sb-bg,#0f172a);border-right:1px solid var(--sb-line,#1e293b);
         display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .18s ease;
-        font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#cbd5e1}
+        font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--sb-text,#cbd5e1)}
     body.sb-open #sb{transform:none}
     #sb-scroll{flex:1;overflow-y:auto;padding:4px 10px 14px;scrollbar-width:thin}
     #sb-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px 16px}
-    #sb-brand{font-weight:700;font-size:15px;color:#f1f5f9;letter-spacing:.01em}
-    #sb-ver{font:600 11px ui-monospace,monospace;color:#64748b;margin-left:6px}
-    .sb-x{background:none;border:0;color:#64748b;font-size:18px;line-height:1;padding:4px 6px;border-radius:6px;cursor:pointer}
-    .sb-x:hover{color:#f1f5f9;background:#1e293b}
-    .sb-h{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#64748b;margin:16px 8px 6px}
+    #sb-brand{font-weight:700;font-size:15px;color:var(--sb-strong,#f1f5f9);letter-spacing:.01em}
+    #sb-ver{font:600 11px ui-monospace,monospace;color:var(--sb-muted,#64748b);margin-left:6px}
+    .sb-x{background:none;border:0;color:var(--sb-muted,#64748b);font-size:18px;line-height:1;padding:4px 6px;border-radius:6px;cursor:pointer}
+    .sb-x:hover{color:var(--sb-strong,#f1f5f9);background:var(--sb-hover,#1e293b)}
+    .sb-h{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--sb-muted,#64748b);margin:16px 8px 6px}
     .sb-item{display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border-radius:8px;border:0;background:none;
-        color:#cbd5e1;font:inherit;text-align:left;text-decoration:none;cursor:pointer}
-    .sb-item:hover{background:#1e293b;color:#fff}
-    .sb-item[aria-current]{background:#1e293b;color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--c,#94a3b8)}
-    .sb-item.on{color:#fcd34d}
+        color:var(--sb-text,#cbd5e1);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+    .sb-item:hover{background:var(--sb-hover,#1e293b);color:var(--sb-hover-text,#fff)}
+    .sb-item[aria-current]{background:var(--sb-hover,#1e293b);color:var(--sb-hover-text,#fff);font-weight:600;box-shadow:inset 3px 0 0 var(--c,#94a3b8)}
+    .sb-item.on{color:var(--sb-on,#fcd34d)}
     .sb-item[hidden]{display:none}
-    .sb-item:disabled{color:#475569;cursor:not-allowed}.sb-item:disabled:hover{background:none}
+    .sb-item:disabled{color:var(--sb-faint,#475569);cursor:not-allowed}.sb-item:disabled:hover{background:none}
     .sb-dot{width:7px;height:7px;border-radius:50%;background:#475569;flex:none}
     .sb-dot.up{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.15)}
     .sb-ico{width:16px;text-align:center;flex:none;opacity:.9}
-    .sb-tag{margin-left:auto;font-size:10.5px;color:#64748b}
-    .sb-box{margin:0 2px;padding:9px 10px;border:1px solid #1e293b;border-radius:10px;background:#111c31}
-    .sb-note{font-size:11.5px;color:#94a3b8;margin:2px 0 8px;overflow-wrap:anywhere}
+    .sb-tag{margin-left:auto;font-size:10.5px;color:var(--sb-muted,#64748b)}
+    .sb-box{margin:0 2px;padding:9px 10px;border:1px solid var(--sb-line,#1e293b);border-radius:10px;background:var(--sb-box,#111c31)}
+    .sb-note{font-size:11.5px;color:var(--sb-note,#94a3b8);margin:2px 0 8px;overflow-wrap:anywhere}
     .sb-note.warn{color:#fbbf24}.sb-note.err{color:#f87171}.sb-note.ok{color:#34d399}
-    .sb-btn{display:block;width:100%;padding:6px 10px;margin-top:6px;border-radius:8px;border:1px solid #334155;
-        background:#1e293b;color:#e2e8f0;font:600 12px/1.3 inherit;cursor:pointer;text-align:center}
-    .sb-btn:hover{background:#334155}.sb-btn.go{background:#0e7490;border-color:#0891b2;color:#fff}
+    .sb-btn{display:block;width:100%;padding:6px 10px;margin-top:6px;border-radius:8px;border:1px solid var(--sb-btn-line,#334155);
+        background:var(--sb-btn,#1e293b);color:var(--sb-btn-text,#e2e8f0);font:600 12px/1.3 inherit;cursor:pointer;text-align:center}
+    .sb-btn:hover{background:var(--sb-btn-line,#334155)}.sb-btn.go{background:#0e7490;border-color:#0891b2;color:#fff}
     .sb-btn.go:hover{background:#0891b2}.sb-btn.armed{background:#dc2626;border-color:#ef4444;color:#fff}
     .sb-btn:disabled{opacity:.45;cursor:not-allowed}
     .sb-row{display:flex;gap:6px}.sb-row .sb-btn{margin-top:0;white-space:nowrap;padding:6px 4px}
-    .sb-list{margin:6px 0 2px;padding:0;list-style:none;font-size:11.5px;color:#94a3b8;max-height:220px;overflow-y:auto}
-    .sb-list li{padding:3px 0;overflow-wrap:anywhere;border-top:1px solid #1e293b}.sb-list li:first-child{border-top:0}
-    .sb-notes{margin:3px 0 0 10px;padding:0;list-style:disc inside;color:#cbd5e1}.sb-notes li{border:0;padding:1px 0}
-    .sb-pre{margin:6px 0 0;padding:6px;border-radius:6px;background:#020617;color:#cbd5e1;
+    .sb-list{margin:6px 0 2px;padding:0;list-style:none;font-size:11.5px;color:var(--sb-note,#94a3b8);max-height:220px;overflow-y:auto}
+    .sb-list li{padding:3px 0;overflow-wrap:anywhere;border-top:1px solid var(--sb-line,#1e293b)}.sb-list li:first-child{border-top:0}
+    .sb-notes{margin:3px 0 0 10px;padding:0;list-style:disc inside;color:var(--sb-text,#cbd5e1)}.sb-notes li{border:0;padding:1px 0}
+    .sb-pre{margin:6px 0 0;padding:6px;border-radius:6px;background:var(--sb-pre,#020617);color:var(--sb-text,#cbd5e1);
         font:10.5px/1.4 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;max-height:140px;overflow:auto}
-    #sb-foot{padding:8px 16px 12px;font-size:10.5px;color:#475569;border-top:1px solid #1e293b}
-    #sb-shade{display:none;position:fixed;inset:0;z-index:39;background:rgba(2,6,23,.6)}
-    #sb-open{background:#1e293b;border:1px solid #334155;color:#cbd5e1;border-radius:8px;padding:5px 9px;font-size:15px;
+    #sb-foot{padding:8px 16px 12px;font-size:10.5px;color:var(--sb-faint,#475569);border-top:1px solid var(--sb-line,#1e293b)}
+    #sb-shade{display:none;position:fixed;inset:0;z-index:39;background:var(--sb-shade,rgba(2,6,23,.6))}
+    #sb-open{background:var(--sb-btn,#1e293b);border:1px solid var(--sb-btn-line,#334155);color:var(--sb-text,#cbd5e1);border-radius:8px;padding:5px 9px;font-size:15px;
         line-height:1;cursor:pointer;margin-right:12px;flex:none}
-    #sb-open:hover{color:#fff;border-color:#64748b}
+    #sb-open:hover{color:var(--sb-hover-text,#fff);border-color:var(--sb-muted,#64748b)}
     body.sb-open #sb-open{display:none}
     @media (min-width:1024px){body{transition:padding-left .18s ease}body.sb-open{padding-left:var(--sb-w)}}
     @media (max-width:1023px){body.sb-open #sb-shade{display:block}#sb{box-shadow:8px 0 30px rgba(0,0,0,.5)}}
+    .sb-themes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .sb-theme{display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:8px;border:1px solid var(--sb-btn-line,#334155);
+        background:var(--sb-btn,#1e293b);color:var(--sb-btn-text,#e2e8f0);font:600 11.5px/1.2 inherit;cursor:pointer;text-align:left}
+    .sb-theme:hover{border-color:var(--sb-muted,#64748b)}
+    .sb-theme[aria-pressed="true"]{outline:2px solid #22d3ee;outline-offset:-1px}
+    .sb-swatch{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid rgba(127,127,127,.5)}
     @media (prefers-reduced-motion:reduce){#sb,body{transition:none}}`;
     document.head.appendChild(css);
 
@@ -83,6 +89,7 @@
         <div id="sb-scroll">
             <div class="sb-h">Dashboards</div><nav id="sb-nav" aria-label="Dashboards"></nav>
             <div class="sb-h">View</div><div id="sb-view"></div>
+            <div class="sb-h">Theme</div><div class="sb-themes" id="sb-theme" role="group" aria-label="Theme"></div>
             <div class="sb-h">Updates</div><div class="sb-box" id="sb-update"></div>
             <div class="sb-h">Power</div><div class="sb-box" id="sb-power"></div>
         </div>
@@ -179,6 +186,28 @@
     });
     document.addEventListener('visibilitychange', acquire);
     paintWake(); acquire();
+
+    // ---------------------------------------------------------------- theme (themes.js does the work)
+    const themeBox = sb.querySelector('#sb-theme');
+    const SWATCH = { auto: 'linear-gradient(135deg,#f1f5f9 50%,#0f172a 50%)', dark: '#1e293b', light: '#f8fafc',
+                     oled: '#000000', contrast: 'linear-gradient(135deg,#000 50%,#facc15 50%)', warm: '#3b1d08' };
+    const TIPS = { auto: "Light or dark, following this phone or computer's setting", dark: 'The original slate look',
+                   light: 'For bright rooms', oled: 'True black: easy on OLED screens at night',
+                   contrast: 'Bold borders and bright text, readable at a glance', warm: 'Dim amber, easy on dark-adapted eyes' };
+    function paintThemes() {
+        const T = window.BioTheme;
+        if (!T) { themeBox.previousElementSibling?.remove(); themeBox.remove(); return; }   // page without themes.js
+        const current = T.choice();
+        themeBox.innerHTML = Object.entries(T.NAMES).map(([key, name]) =>
+            `<button type="button" class="sb-theme" data-theme-pick="${key}" aria-pressed="${key === current}" title="${esc(TIPS[key] || '')}">` +
+            `<span class="sb-swatch" style="background:${SWATCH[key]}"></span>${esc(name)}${key === 'auto' && current === 'auto' ? ` <span class="sb-tag">${esc(T.NAMES[T.theme()] || '')}</span>` : ''}</button>`).join('');
+    }
+    themeBox.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-theme-pick]');
+        if (b && window.BioTheme) window.BioTheme.set(b.dataset.themePick);
+    });
+    window.addEventListener('biodash-theme', paintThemes);
+    paintThemes();
 
     // two taps to act: the first arms a button (red, 4 s), the second confirms
     let armed = null, armTimer = null;
