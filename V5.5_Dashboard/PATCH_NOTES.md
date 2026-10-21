@@ -1,0 +1,25 @@
+# V5.5: live ECG and accelerometer forecasts in Polar-dash (🔮 pills on both cards)
+- forecast_service.py: the H10 models forecast the next second every 0.5 s, as a band and a dashed line ahead of the trace
+- analysis_dashboard/waves.py and tools/export_waves.py: the 125 Hz rows the models use, live and offline
+- replay_session.py: play a recording back through the dashboard; replays are never mixed into real recordings, exports or uploads
+- fleet.py runs on Python 3.10 and never pulls replayed sessions
+- tools/orin_setup.sh: PyTorch for the Jetson's GPU, transformers and the models on an Orin, then a timing check
+- Polar H10 timestamps: accelerometer at its measured rate (~205.6 Hz), one clock for ECG and motion, no jumps back
+- Accelerometer samples spaced at the rate the strap really runs (~205.6 Hz), measured from its frame times
+- ECG and accelerometer share one clock offset: the same instant has the same time in both files
+- No more 1-1.3 s jumps (often backwards) when the clock drifted: corrected 1 ms at a time instead
+- Debug panel: measured accelerometer rate and clock restarts
+- Name your devices ("Mine", "Boss's"): a tag next to every device, click to name it
+- Analysis page: "For ReaLLM-Forge" downloads the selected signals as an integer CSV that data/csv_mc_int takes as it is
+- Whole numbers everywhere: decimals kept by scaling (temp_c_x10), time as minute_of_day and second, -1 = not recording
+- Fixed range per signal, so exports from different days share vocabularies and train together
+- Each export brings columns.json (scales, ranges) and prepare.sh (get_dataset.sh with every --range)
+- tools/export_mcint.py does the same from the command line; --forge ~/ReaLLM-Forge builds the datasets too
+- tools/mcint_decode.py turns sampled CSVs back into real units
+- Sidebar -> Restart -> Restart everything (or ./restart_all.py): stops every dashboard and Bluetooth worker from any release, resets Bluetooth, starts again what was running
+- Hydro: after "It's empty now" a banner stays up until "It's full now" (the bottle counts no sips until it has both)
+- Hydro isn't pinned to a radio: every radio listens and the one that hears the bottle best connects (failed radios are passed over)
+- tools/fleet.py: check your Tailscale machines for recordings, pull what's new, push to a cloud with rclone, and schedule uploads (every 5 min; ECG hourly)
+- tools/export_ecg.py: the ECG on its own, raw with timestamps and resampled to 200 Hz without (--uv for csv_mc_int, --with-acc for the motion alongside)
+- Name your devices: a tag next to every device in the scanner and the reconnect bar, click it to name it ("Mine", "Boss's")
+- tools/radio_compare.py: compare two Bluetooth dongles (one at a time in the same port, then --report)

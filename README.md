@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V5.3_Dashboard/`](V5.3_Dashboard) | **V5.3 (latest)** | V5.2 plus an export for ReaLLM-Forge: the signals on one clock as an integer CSV that `data/csv_mc_int` takes as it is (fixed range per signal, -1 = not recording), with its `--range` list and a decoder for sampled CSVs. |
+| [`V5.5_Dashboard/`](V5.5_Dashboard) | **V5.5 (latest)** | V5.3 plus live forecasts in Polar-dash: the next second of the ECG and the accelerometer, predicted by the H10 models and drawn ahead of the trace (needs PyTorch; `tools/orin_setup.sh` sets it up on a Jetson). Also the Polar H10 timestamp fix, replays kept out of real recordings, and `tools/export_waves.py`. |
+| [`V5.3_Dashboard/`](V5.3_Dashboard) | V5.3 | V5.2 plus an export for ReaLLM-Forge: the signals on one clock as an integer CSV that `data/csv_mc_int` takes as it is (fixed range per signal, -1 = not recording), with its `--range` list and a decoder for sampled CSVs. |
 | [`V5.2_Dashboard/`](V5.2_Dashboard) | V5.2 | Every Bluetooth adapter tested on the Jetson Orin, with why each did or didn't work; the UB500 Plus proven with the bottle; the Orin boot catch; water calculations with the local weather; the Bluetooth scanner. |
 | [`V5.0_Dashboard/`](V5.0_Dashboard) | V5.0 | Analysis dashboard (port 5005): summaries of every device for a day or a range, every signal on one clock, CSV export, overnight reports. (No V4: four is unlucky.) |
 | [`V3.1_Dashboard/`](V3.1_Dashboard) | V3.1 | Hydro-dash tuning: fill level and sip volume from the bottle's own calibration, bottle size read from the bottle, glow colours and patterns, reminders (still being confirmed), and the Bluetooth radio catch documented |
@@ -32,7 +33,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v
 ## Quick start
 
 ```bash
-cd V5.3_Dashboard
+cd V5.5_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -40,7 +41,7 @@ Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## How it works
 
-Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V5.3_Dashboard/docs/ARCHITECTURE.md`](V5.3_Dashboard/docs/ARCHITECTURE.md).
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V5.5_Dashboard/docs/ARCHITECTURE.md`](V5.5_Dashboard/docs/ARCHITECTURE.md).
 
 ## Keeping data out of the repo
 

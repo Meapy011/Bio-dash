@@ -1,5 +1,33 @@
 # Changelog
 
+## V5.5
+
+V5.3 plus live forecasts of the ECG and the accelerometer in Polar-dash, from the H10 models
+trained in ReaLLM-Forge:
+
+- **🔮 Forecast pills** on the ECG card and the accelerometer card show the next second ahead of the
+  live trace: a shaded band (the range of 8 sampled futures) and a dashed line (one representative
+  sample), with the running error next to the "repeat the last value" baseline. `forecast_service.py`
+  runs as its own process (torch never loads into the web server); `run_dashboard.sh` starts it and
+  restarts it if it stops. Details in `polar_dashboard/forecast/README.md`. A research demo, not a
+  medical device. The model weights stay out of git: copy `forecast/models` from the shared zip.
+- **`analysis_dashboard/waves.py`:** the ECG and motion on one even 8 ms (125 Hz) grid, the rows the
+  models were trained on; `LiveAligner` builds the same rows live.
+- **`tools/export_waves.py`:** those rows as a csv_mc_int dataset (`--with-acc`, `--from`), with
+  `columns.json` and a `_pieces.csv` of the joins.
+- **`polar_dashboard/replay_session.py`:** plays a recorded session back through the dashboard to
+  test the forecasts. It refuses to write into your real recordings unless told to
+  (`BIODASH_DATA_DIR` or `--into-recordings`), marks what it writes with `<time>_replay_info.json`,
+  and the exporters, the analysis page and `fleet.py` (push and pull) all leave replays out.
+- **`tools/fleet.py`** runs on Python 3.10 (the Orin) and never pulls a replayed session from
+  another machine.
+- **`tools/orin_setup.sh`: the forecasts on a Jetson Orin.** Installs PyTorch built for the Jetson
+  (NVIDIA's Jetson AI Lab index for the JetPack it finds; never PyPI's, which can't use the GPU) and
+  transformers into one environment every release shares (`~/.local/share/bio-dash/forecast-venv`,
+  which the dashboards then use by themselves), copies the model weights in (`--models <zip>`), starts
+  the forecasts at 4 samples, and times both models at 4 and 8 (`forecast_service.py --bench --samples`).
+- Carries every V5.3 change, including the Polar H10 timestamp fix (`stream_clock.py`).
+
 ## V5.3
 
 V5.2 plus an export made for ReaLLM-Forge, and one button to restart everything:
@@ -39,7 +67,25 @@ V5.2 plus an export made for ReaLLM-Forge, and one button to restart everything:
   stand-in machines and a real rclone.
 - **`tools/export_ecg.py`: just the ECG.** The raw samples with their timestamps, and an even
   200 Hz (no timestamps, interpolated linear or cubic within each unbroken stretch, a stretches file
-  saying where the gaps were); `--uv` for whole microvolts. `tools/test_export_ecg.py`: 18 checks.
+  saying where the gaps were); `--uv` for whole microvolts. `--with-acc` adds the strap's
+  motion (X/Y/Z mg) on the same 200 Hz rows, plus its raw file. `tools/test_export_ecg.py`: 27 checks.
+- **Name your devices** ("Mine", "Boss's"): a tag next to every device in the scanner, the
+  auto-reconnect bar and beside the status, click it to name the device. Names are kept per device
+  (by the name it advertises, or its address) in `~/.config/bio-dash/device_names.json`, shared by
+  every dashboard and carried across upgrades. Only what you see changes; recordings and their
+  folders keep the device's own name.
+- **Polar H10 timestamps fixed** (Polar-dash and Omni; `stream_clock.py`). The strap's accelerometer
+  set to 200 Hz really runs at about 205.6 Hz; samples were stamped 5 ms apart, so each frame's
+  first samples were up to 5 ms early and overlapped the previous frame. The rate is now measured
+  from the strap's own frame times. ECG and accelerometer now share one clock offset, so the same
+  instant has the same time in both files. And the jumps of 1-1.3 s (often backwards) that split
+  recordings came from re-anchoring the clock whenever it drifted 1 s from the computer's: drift is
+  now corrected 1 ms at a time and stamps never go backwards. The debug panel shows the measured
+  accelerometer rate and any clock restarts. Older recordings are unchanged.
+  `polar_dashboard/test_stream_clock.py`: 13 checks with a simulated strap.
+  `tools/apply_clock_fix.py <release folder>` puts the same fix into another V5.x copy (e.g. V5.5).
+- **`tools/radio_compare.py`** (from V6): which of two Bluetooth radios hears your devices better,
+  side by side or one at a time with a `--report`.
 - Each export comes with `<name>.columns.json` (scales, ranges, "no reading" values) and
   `<name>.prepare.sh`, which runs `get_dataset.sh` with every `--range` filled in.
   `tools/export_mcint.py --forge ~/ReaLLM-Forge` builds the datasets in one go.
