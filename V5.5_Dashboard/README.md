@@ -699,6 +699,11 @@ running error beside the "repeat the last value" baseline. A research demo, not 
   writes to a test folder (`BIODASH_DATA_DIR`), never into your recordings unless told to.
 - **Datasets:** `tools/export_waves.py` writes the same 125 Hz rows for ReaLLM-Forge.
 
+- **Is it working?** `tools/score_forecast.py` scores the model offline on your recordings against
+  repeating the last value, at 0.25 / 0.5 / 1 s ahead, as the dashboard runs it and with the ECG's
+  baseline offset removed. Run it with the forecast Python:
+  `~/.local/share/bio-dash/forecast-venv/bin/python tools/score_forecast.py <…/*_ecg.csv>`.
+
 Full details: `polar_dashboard/forecast/README.md`.
 
 ## Which radio hears better: `tools/radio_compare.py`

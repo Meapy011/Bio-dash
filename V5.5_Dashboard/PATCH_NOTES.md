@@ -1,4 +1,6 @@
-# V5.5: live ECG and accelerometer forecasts in Polar-dash (🔮 pills on both cards)
+# tools/score_forecast.py: is the forecast beating "hold" on your recordings? (and does removing the baseline offset help?)
+- tools/score_forecast.py: scores the forecast model offline on recordings against repeating the last value, as the dashboard runs it and with the ECG's baseline offset removed
+- tools/orin_setup.sh: takes the Hugging Face upload zip, fetches cuDSS / cuSPARSELt when PyTorch needs them, reuses a working system-wide Jetson PyTorch
 - Updates: upgrading to a new version works again when fleet.py's scheduled uploads are installed (they were taken for dashboards)
 - forecast_service.py: the H10 models forecast the next second every 0.5 s, as a band and a dashed line ahead of the trace
 - analysis_dashboard/waves.py and tools/export_waves.py: the 125 Hz rows the models use, live and offline
