@@ -125,9 +125,68 @@ def to_real(lane, v):
     return v * float(lane.get("step", 1)) / float(lane.get("scale") or 1)
 
 
-def summarize(samples, lanes):
-    """samples: N x K x H integer values -> median, band (lo / hi) and the representative sample (the one
-    closest to the median; averaging samples would smear a heartbeat whose timing is uncertain)."""
+# ---- picking the line drawn by the heart's rhythm
+# The model tends to put the next R peak early (tools/forecast_timing.py: ~100 ms at 0.2-0.5 s ahead, Oct 22).
+# Of the samples it drew, the one whose next R peak falls where the recent beat-to-beat interval says it should
+# is drawn instead of the one closest to the median. BIODASH_FORECAST_REP=median goes back to the old choice.
+REP_PICK = os.environ.get("BIODASH_FORECAST_REP", "rhythm")
+R_HALF = 12               # rows each side of the moving mean taken off before looking for R peaks (~200 ms)
+R_REFRACTORY = 31         # rows (~250 ms): two R peaks are never closer
+
+
+def _highpass(x):
+    n, out = len(x), []
+    for i in range(n):
+        a, b = max(0, i - R_HALF), min(n, i + R_HALF + 1)
+        out.append(x[i] - sum(x[a:b]) / (b - a))
+    return out
+
+
+def _peaks(hp, thr, lo=1, hi=None):
+    """Indices of R peaks: local maxima above thr, the tallest first within R_REFRACTORY rows."""
+    hi = len(hp) - 1 if hi is None else hi
+    cand = sorted((i for i in range(max(1, lo), hi) if hp[i] > thr and hp[i] >= hp[i - 1] and hp[i] > hp[i + 1]),
+                  key=lambda i: -hp[i])
+    taken = []
+    for i in cand:
+        if all(abs(i - j) >= R_REFRACTORY for j in taken):
+            taken.append(i)
+    return sorted(taken)
+
+
+def rhythm_pick(ctx, samples):
+    """ctx: the context's ECG (one lane, oldest first, on the model's grid); samples: N lists of the forecast ECG
+    (the rows after ctx). -> the index of the sample whose first R peak lands nearest the next beat expected from
+    the context's own beat-to-beat intervals (median of the last three), or None when the context has fewer than
+    two clear R peaks."""
+    T = len(ctx)
+    hp = _highpass(ctx)
+    top = max(hp) if hp else 0
+    if top <= 0:
+        return None
+    pk = _peaks(hp, 0.5 * top, hi=T - 3)                 # a peak in the last rows may still be rising
+    if len(pk) < 2:
+        return None
+    rr = statistics.median([b - a for a, b in zip(pk, pk[1:])][-3:])
+    if not R_REFRACTORY <= rr <= 250:                     # 30-240 bpm on an 8 ms grid
+        return None
+    expect = max(1.0, pk[-1] + rr - (T - 1))              # rows after the last context row (overdue: next row)
+    thr = 0.5 * statistics.median(hp[i] for i in pk)
+    best = None
+    for n, s in enumerate(samples):
+        hs = _highpass(ctx[-R_HALF:] + list(s))[R_HALF:]
+        first = next((j + 1 for j in _peaks(hs, thr) if j + 1 > max(0, (pk[-1] + R_REFRACTORY) - (T - 1))), None)
+        when = first if first is not None else len(s) + rr / 2  # no beat in the horizon: later than its end
+        score = abs(when - expect)
+        if best is None or score < best[0]:
+            best = (score, n)
+    return best[1]
+
+
+def summarize(samples, lanes, prefer=None):
+    """samples: N x K x H integer values -> median, band (lo / hi) and the representative sample (`prefer` if
+    given, else the one closest to the median; averaging samples would smear a heartbeat whose timing is
+    uncertain)."""
     N, K, H = len(samples), len(samples[0]), len(samples[0][0])
     real = [[[to_real(lanes[k], samples[n][k][h]) for h in range(H)] for k in range(K)] for n in range(N)]
     med = [[statistics.median(real[n][k][h] for n in range(N)) for h in range(H)] for k in range(K)]
@@ -135,7 +194,7 @@ def summarize(samples, lanes):
     hi = [[max(real[n][k][h] for n in range(N)) for h in range(H)] for k in range(K)]
     spread = [sum(hi[k][h] - lo[k][h] for h in range(H)) / H + 1e-9 for k in range(K)]
     dist = [sum(sum(abs(real[n][k][h] - med[k][h]) for h in range(H)) / spread[k] for k in range(K)) for n in range(N)]
-    rep = min(range(N), key=dist.__getitem__)
+    rep = prefer if prefer is not None and 0 <= prefer < N else min(range(N), key=dist.__getitem__)
     dec = [3 if lane.get("unit") == "mV" else 1 for lane in lanes]
 
     def rnd(rows):
@@ -689,7 +748,11 @@ class Service:
         ov.compute_ms = (time.perf_counter() - t0) * 1000.0
         ov.count += 1
         ov.fresh = 0
-        out = summarize(vals, ov.lanes)
+        prefer = None
+        if REP_PICK == "rhythm" and ov.lanes[0]["column"].startswith("ecg"):
+            prefer = rhythm_pick([r[0] for r in ov.ring], [v[0] for v in vals])   # all 2 s: more beats than the context
+        out = summarize(vals, ov.lanes, prefer)
+        out["rep_pick"] = "rhythm" if prefer is not None else "median"
         t0_new = times[-1] + ov.dt_ms
         self.keep(ov, t0_new)
         ov.prev = {"t0": t0_new, "dt": ov.dt_ms, "from": times[-1], **{k: out[k] for k in ("rep", "median", "lo", "hi")}}

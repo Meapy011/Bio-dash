@@ -1,4 +1,6 @@
 # V5.8: 🧪 Lab, PR #924's Stream Lane Lab viewer on the live strap
+- The forecast line drawn follows your rhythm: of the 8 samples, the one whose next beat lands where your recent beat-to-beat interval puts it (the model tends to put beats early); BIODASH_FORECAST_REP=median for the old choice
+- tools/forecast_timing.py: is the forecast's beat timing off because of the model or a clock / drawing offset? R peaks in the recording vs the forecast log, by how far ahead each was forecast
 - 🧪 Lab (/lab, next to Forecast): ReaLLM-Forge PR #924's Stream Lane Lab viewer on the live strap. Pick a model, horizon and decoding, and watch each forecast meet the real ECG; also plays PR #924's sine demo
 - GET /api/models and POST /api/forecast: the H10 models on stream-lane-lab's API (ReaLLM-Forge PR #924), for other tools
 - Share link ready: behind tailscale serve, visitors count as other devices, not as this computer
