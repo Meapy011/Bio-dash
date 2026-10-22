@@ -1,5 +1,19 @@
 # Changelog
 
+## V5.8
+
+V5.6 plus a second page for the forecast models: the Stream Lane Lab viewer from ReaLLM-Forge PR #924,
+on the live strap.
+
+- **🧪 Lab** (`/lab`, the button next to Forecast): ReaLLM-Forge PR #924's Stream Lane Lab viewer, served
+  by Polar-dash, with the live strap as a source beside PR #924's sine demo. Pick a model (`ecg`, or `acc`
+  with its 4 columns), the horizon (up to 128 rows, 1 s), the decoding (mean, greedy, sample with
+  temperature and top-k), press Start: it forecasts from the newest rows as soon as the last forecast is
+  back, and the real signal then arrives over it, with the one-step and rollout error, latency and frames
+  per second. It runs on the same forecast service as the Heart page (one at a time on the GPU), through
+  `GET /api/lab/rows` (the strap's newest rows on the 8 ms grid, in mV / mg) and PR #924's `GET /api/signal`.
+  Pausing, or leaving the tab, stops its forecasts. `test_lab.py` (19 checks, no PyTorch needed).
+
 ## V5.6
 
 V5.5 plus a better look at the live ECG forecast, and changing straps without restarting:

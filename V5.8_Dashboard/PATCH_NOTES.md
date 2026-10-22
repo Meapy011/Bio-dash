@@ -1,0 +1,36 @@
+# V5.8: 🧪 Lab, PR #924's Stream Lane Lab viewer on the live strap
+- 🧪 Lab (/lab, next to Forecast): ReaLLM-Forge PR #924's Stream Lane Lab viewer on the live strap. Pick a model, horizon and decoding, and watch each forecast meet the real ECG; also plays PR #924's sine demo
+- GET /api/models and POST /api/forecast: the H10 models on stream-lane-lab's API (ReaLLM-Forge PR #924), for other tools
+- Share link ready: behind tailscale serve, visitors count as other devices, not as this computer
+- Pages and scripts are rechecked on every load, so the browser shows a new version straight after an update (no hard refresh)
+- The forecast stays under the live ECG after the pen passes, so prediction and real beat are on top of each other
+- 🔮 Inference strip under the monitor: what the model forecast for each moment, lined up with the ECG
+- The inference is logged to Documents/Bio-dash/Forecasts/<day>/<time>_forecast_ecg.csv (mV, with how far ahead)
+- ⏏ Disconnect in the header: end the session, then pick this strap or another; auto-reconnect waits for your pick
+- tools/score_forecast.py: scores the forecast model offline on recordings against repeating the last value, as the dashboard runs it and with the ECG's baseline offset removed
+- tools/orin_setup.sh: takes the Hugging Face upload zip, fetches cuDSS / cuSPARSELt when PyTorch needs them, reuses a working system-wide Jetson PyTorch
+- Updates: upgrading to a new version works again when fleet.py's scheduled uploads are installed (they were taken for dashboards)
+- forecast_service.py: the H10 models forecast the next second every 0.5 s, as a band and a dashed line ahead of the trace
+- analysis_dashboard/waves.py and tools/export_waves.py: the 125 Hz rows the models use, live and offline
+- replay_session.py: play a recording back through the dashboard; replays are never mixed into real recordings, exports or uploads
+- fleet.py runs on Python 3.10 and never pulls replayed sessions
+- tools/orin_setup.sh: PyTorch for the Jetson's GPU, transformers and the models on an Orin, then a timing check
+- Polar H10 timestamps: accelerometer at its measured rate (~205.6 Hz), one clock for ECG and motion, no jumps back
+- Accelerometer samples spaced at the rate the strap really runs (~205.6 Hz), measured from its frame times
+- ECG and accelerometer share one clock offset: the same instant has the same time in both files
+- No more 1-1.3 s jumps (often backwards) when the clock drifted: corrected 1 ms at a time instead
+- Debug panel: measured accelerometer rate and clock restarts
+- Name your devices ("Mine", "Boss's"): a tag next to every device, click to name it
+- Analysis page: "For ReaLLM-Forge" downloads the selected signals as an integer CSV that data/csv_mc_int takes as it is
+- Whole numbers everywhere: decimals kept by scaling (temp_c_x10), time as minute_of_day and second, -1 = not recording
+- Fixed range per signal, so exports from different days share vocabularies and train together
+- Each export brings columns.json (scales, ranges) and prepare.sh (get_dataset.sh with every --range)
+- tools/export_mcint.py does the same from the command line; --forge ~/ReaLLM-Forge builds the datasets too
+- tools/mcint_decode.py turns sampled CSVs back into real units
+- Sidebar -> Restart -> Restart everything (or ./restart_all.py): stops every dashboard and Bluetooth worker from any release, resets Bluetooth, starts again what was running
+- Hydro: after "It's empty now" a banner stays up until "It's full now" (the bottle counts no sips until it has both)
+- Hydro isn't pinned to a radio: every radio listens and the one that hears the bottle best connects (failed radios are passed over)
+- tools/fleet.py: check your Tailscale machines for recordings, pull what's new, push to a cloud with rclone, and schedule uploads (every 5 min; ECG hourly)
+- tools/export_ecg.py: the ECG on its own, raw with timestamps and resampled to 200 Hz without (--uv for csv_mc_int, --with-acc for the motion alongside)
+- Name your devices: a tag next to every device in the scanner and the reconnect bar, click it to name it ("Mine", "Boss's")
+- tools/radio_compare.py: compare two Bluetooth dongles (one at a time in the same port, then --report)
