@@ -1,5 +1,27 @@
 # Changelog
 
+## V5.6
+
+V5.5 plus a better look at the live ECG forecast, and changing straps without restarting:
+
+- **The pen traces over the forecast.** What the model forecast stays on the monitor under the live ECG
+  after the pen passes (it used to vanish), so each beat shows the prediction and the real thing on top
+  of each other. Ahead of the pen it's still the dashed line and band.
+- **🔮 Inference strip** under the monitor while the ECG forecast is on: what the model forecast for each
+  moment, alone, on the same time axis as the live ECG above it, with the pen's position marked.
+- **The inference is logged:** `<Documents>/Bio-dash/Forecasts/<day>/<session time>_forecast_ecg.csv` (and
+  `_forecast_acc.csv`), one row per 8 ms: `t_ms` (the strap's clock, as in the session's own files),
+  `lead_ms` (how far ahead it was forecast), the line drawn and the median and band of the samples, in
+  mV / mg. It's what the strip shows. `Forecasts/` sits outside the recordings layout, so Analysis, the
+  exporters and `fleet.py` leave it alone. `BIODASH_FORECAST_LOG=0` turns it off.
+- **⏏ Disconnect** (header, while connected; tap twice): ends the session with the strap, and auto-reconnect
+  waits until you pick a device in the scanner: the same strap, or another one. Picking another device
+  while connected switches to it.
+- **The model weights carry over** to a new version: the forecast uses the same model's weights from an
+  older release folder when its own has none (so upgrading from V5.5 keeps the forecast working), and from
+  V5.6 on the updater links them into the new folder.
+- `polar_dashboard/test_worker_commands.py` (8 checks, a stand-in strap) and `test_forecast_log.py` (11).
+
 ## V5.5
 
 V5.3 plus live forecasts of the ECG and the accelerometer in Polar-dash, from the H10 models
