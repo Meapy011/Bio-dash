@@ -11,7 +11,9 @@ stays out of the web server:
     come from each model folder's config.json);
   * every refresh (0.5 s) and for each overlay that is switched on, forecasts the next second as 8 samples
     with the fast loop (KV cache + CUDA graph) and POSTs the band, the median and one representative sample
-    to app.py's /api/forecast, which broadcasts them to the browsers;
+    to app.py's /api/forecast/live, which broadcasts them to the browsers;
+  * answers stream-lane-lab's API (ReaLLM-Forge PR #924: GET /api/models, POST /api/forecast) on
+    127.0.0.1:5011, which app.py passes on;
   * sends a heartbeat once a second (state, device, timings) and gets the overlay switches back.
 
 Two models: forecast/models/ecg (ECG only; the ECG overlay) and forecast/models/ecg_acc (ECG +
@@ -27,6 +29,7 @@ import argparse
 import collections
 import csv
 import json
+import math
 import os
 import signal
 import statistics
@@ -172,6 +175,54 @@ def weights_elsewhere(model_dir, cfg):
     return None
 
 
+API_MAX_HORIZON = 128     # rows, as PR #924's API
+
+
+def start_api(svc, port):
+    """The PR #924 API for app.py to pass on: GET /models, POST /forecast on 127.0.0.1 only."""
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def _send(self, code, body):
+            data = json.dumps(body).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def do_GET(self):
+            if self.path.rstrip("/") == "/models":
+                return self._send(200, svc.api_models())
+            self._send(404, {"detail": "not found"})
+
+        def do_POST(self):
+            if self.path.rstrip("/") != "/forecast":
+                return self._send(404, {"detail": "not found"})
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(min(n, 8 << 20)) or b"null")
+            except (ValueError, OSError):
+                return self._send(422, {"detail": "bad JSON"})
+            try:
+                code, body = svc.api_forecast(req)
+            except Exception as e:     # noqa: BLE001  (report, keep serving)
+                code, body = 500, {"detail": f"{type(e).__name__}: {e}"}
+            self._send(code, body)
+
+        def log_message(self, *_):
+            pass
+
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    except OSError as e:
+        log(f"API: can't listen on 127.0.0.1:{port} ({e}); /api/models and /api/forecast are off")
+        return None
+    threading.Thread(target=server.serve_forever, name="api", daemon=True).start()
+    log(f"API (stream-lane-lab contract) on 127.0.0.1:{port}")
+    return server
+
+
 class ForecastLog:
     """<data>/Forecasts/<day>/<HH-MM-SS>_forecast_<kind>.csv for the session being followed (_replay added for a
     replayed one): one row per grid instant, the forecast the dashboard showed for it -- the representative
@@ -288,6 +339,7 @@ class Overlay:
 class Service:
     def __init__(self, a):
         self.a = a
+        self.gpu = threading.Lock()          # the live loop and the HTTP API take turns on the models
         self.url = a.url.rstrip("/")
         self.settings = dict(DEFAULTS)
         self.overlays = {"ecg": Overlay("ecg", a.ecg_model or os.path.join(a.models, "ecg")),
@@ -319,6 +371,127 @@ class Service:
             + (" · torch.compile on" if a.compile and self.torch else ""))
         for ov in self.overlays.values():
             log(f"{ov.kind}: {ov.model_dir} ({ov.run}) {ov.cfg_error or ''}".rstrip())
+
+    # ---------------- the PR #924 API (stream-lane-lab: GET /api/models, POST /api/forecast)
+    def api_models(self):
+        out = []
+        for kind, ov in self.overlays.items():
+            if ov.cfg_error:
+                continue
+            cols = []
+            for ln in ov.lanes:
+                step, scale = float(ln.get("step", 1)), float(ln.get("scale") or 1)
+                cols.append({"name": f"{ln['column'].rsplit('_', 1)[0]}_{ln.get('unit') or 'value'}",
+                             "unit": ln.get("unit"), "minimum": ln["int_min"] * step / scale,
+                             "maximum": ln["int_max"] * step / scale, "levels": ln["int_max"] - ln["int_min"] + 1,
+                             "kind": "integer_range"})
+            out.append({"id": kind, "name": ov.run, "channels": len(cols), "columns": cols,
+                        "context_length": ov.block, "interval_ms": ov.dt_ms, "max_horizon": API_MAX_HORIZON})
+        return {"models": out, "device": self.device_name, "threads": self.torch.get_num_threads() if self.torch else 0,
+                "message": "" if out else "No forecast models are installed (polar_dashboard/forecast/models)."}
+
+    def api_forecast(self, req):
+        """PR #924's POST /api/forecast for the H10 models: history rows in real units (mV / mg) on the
+        model's grid (8 ms), oldest first -> predictions for the next `horizon` rows. Returns (status, body)."""
+        torch = self.torch
+        if torch is None:
+            return 503, {"detail": self.torch_error}
+        if not isinstance(req, dict):
+            return 422, {"detail": "Send a JSON object."}
+        ov = self.overlays.get(req.get("model_id"))
+        if ov is None or ov.cfg_error:
+            return 404, {"detail": "Checkpoint not found; refresh the model list."}
+        try:
+            horizon = int(req.get("horizon", 24))
+            mode = req.get("mode", "mean")
+            temperature = float(req.get("temperature", 1.0))
+            top_k = int(req.get("top_k", 0))
+            seed = int(req.get("seed", 0))
+            history = req.get("history")
+        except (TypeError, ValueError):
+            return 422, {"detail": "horizon, top_k and seed are integers; temperature a number."}
+        if not 1 <= horizon <= API_MAX_HORIZON:
+            return 422, {"detail": f"horizon must be 1..{API_MAX_HORIZON}"}
+        if mode not in ("mean", "greedy", "sample"):
+            return 422, {"detail": "mode must be mean, greedy or sample"}
+        if not 0 < temperature <= 10 or not 0 <= top_k <= 4096 or not 0 <= seed < 2 ** 31:
+            return 422, {"detail": "temperature in (0, 10], top_k 0..4096, seed 0..2^31-1"}
+        K = len(ov.lanes)
+        if not isinstance(history, list) or not 1 <= len(history) <= 16384:
+            return 422, {"detail": "Provide between 1 and 16384 observed frames."}
+        if any(not isinstance(r, list) or len(r) != K for r in history):
+            return 422, {"detail": f"Every history row must contain {K} columns."}
+        try:
+            rows = [[float(v) for v in r] for r in history]
+        except (TypeError, ValueError):
+            return 422, {"detail": "History must contain numbers."}
+        if any(not math.isfinite(v) for r in rows for v in r):
+            return 422, {"detail": "History must contain finite numbers."}
+        rows = rows[-(ov.block - horizon):]                  # context + horizon fit the model's window
+        ints, clipped = [], [0] * K
+        for r in rows:
+            q = []
+            for k, (v, ln) in enumerate(zip(r, ov.lanes)):
+                i = int(round(v * float(ln.get("scale") or 1) / float(ln.get("step", 1))))
+                if i < ln["int_min"] or i > ln["int_max"]:
+                    clipped[k] += 1
+                    i = min(ln["int_max"], max(ln["int_min"], i))
+                q.append(i)
+            ints.append(q)
+        with self.gpu:
+            loading = ov.model is None
+            if not self.ensure_model(ov):
+                return 500, {"detail": ov.load_error or ov.cfg_error or "the model didn't load"}
+            t0 = time.perf_counter()
+            preds = self._rollout(ov, ints, horizon, mode, temperature, top_k, seed)
+            if self.dev.type == "cuda":
+                torch.cuda.synchronize()
+            latency = (time.perf_counter() - t0) * 1000.0
+        return 200, {"predictions": preds, "latency_ms": latency, "model_id": req["model_id"],
+                     "history_frames_used": len(rows), "horizon": horizon, "mode": mode, "model_loaded": loading,
+                     "out_of_range_counts": clipped, "interval_ms": ov.dt_ms,
+                     "note": "Forecast uses supplied history only."}
+
+    def _rollout(self, ov, ints, horizon, mode, temperature, top_k, seed):
+        """Autoregressive forecast with the model's KV cache. mean: each lane's expected value (returned as is,
+        fed back rounded to its integer level); greedy: the most likely level; sample: a draw at `temperature`
+        from the top_k levels (0 = all), seeded."""
+        torch = self.torch
+        model, dev = ov.model, self.dev
+        lo = torch.tensor([ln["int_min"] for ln in ov.lanes], device=dev)
+        real = [float(ln.get("step", 1)) / float(ln.get("scale") or 1) for ln in ov.lanes]
+        ids = torch.tensor([[r[k] for r in ints] for k in range(len(ov.lanes))], device=dev).unsqueeze(0) - lo.view(1, -1, 1)
+        gen = torch.Generator(device=dev).manual_seed(seed)
+        amp = torch.autocast("cuda", dtype=torch.bfloat16) if dev.type == "cuda" else torch.autocast("cpu", enabled=False)
+        out_rows, past, x = [], None, ids
+        with torch.inference_mode(), amp:
+            for _ in range(horizon):
+                o = model(x, past_key_values=past, use_cache=True, last_step_only=True)
+                past = o.past_key_values
+                nxt, row = [], []
+                for k, lg in enumerate(o.logits):
+                    lg = lg[0, -1].float()
+                    if mode == "greedy":
+                        q = int(lg.argmax())
+                        val = (q + int(lo[k])) * real[k]
+                    elif mode == "mean":
+                        p = torch.softmax(lg, -1)
+                        levels = torch.arange(lg.numel(), device=dev, dtype=torch.float32)
+                        m = float((p * levels).sum())
+                        q = int(round(m))
+                        val = (m + int(lo[k])) * real[k]
+                    else:
+                        lg = lg / temperature
+                        if 0 < top_k < lg.numel():
+                            v, _ = torch.topk(lg, top_k)
+                            lg = lg.masked_fill(lg < v[-1], float("-inf"))
+                        q = int(torch.multinomial(torch.softmax(lg, -1), 1, generator=gen))
+                        val = (q + int(lo[k])) * real[k]
+                    nxt.append(q)
+                    row.append(round(val, 6))
+                out_rows.append(row)
+                x = torch.tensor(nxt, device=dev).view(1, -1, 1)
+        return out_rows
 
     # ---------------- the inference log
     def keep(self, ov, t0_new):
@@ -464,7 +637,7 @@ class Service:
                                           "rep_index": out["rep_index"], "median": out["median"]}) + "\n")
             self.record.flush()
         try:
-            post_json(self.url + "/api/forecast", payload)
+            post_json(self.url + "/api/forecast/live", payload)
             ov.posted += 1
         except (urllib.error.URLError, OSError, ValueError) as e:
             self.dashboard_ok = False
@@ -481,6 +654,8 @@ class Service:
 
     def run(self):
         threading.Thread(target=self._heartbeats, name="heartbeat", daemon=True).start()
+        if self.a.api_port:
+            start_api(self, self.a.api_port)
         next_follow = next_fc = 0.0
         while not self.stop:
             now = time.time()
@@ -517,7 +692,8 @@ class Service:
                     ov = self.overlays[k]
                     if len(ov.ring) >= MIN_CONTEXT and ov.fresh > 0 and self.ensure_model(ov):
                         try:
-                            self.forecast(ov)
+                            with self.gpu:
+                                self.forecast(ov)
                         except Exception as e:     # noqa: BLE001  (keep serving; report it)
                             ov.load_error = f"forecast failed: {type(e).__name__}: {e}"
                             log(ov.load_error)
@@ -590,6 +766,8 @@ def main():
     ap.add_argument("--session", help="follow this *_ecg.csv instead of the newest recording")
     ap.add_argument("--record", help="append each forecast's context rows to this JSONL file (checks)")
     ap.add_argument("--seed", type=int, help="fixed sampling seed for every forecast (checks)")
+    ap.add_argument("--api-port", type=int, default=int(os.environ.get("BIODASH_FORECAST_API_PORT", "5011")),
+                    help="local port for the PR #924 API that app.py passes on (0 = off; default 5011)")
     ap.add_argument("--no-log", action="store_true", default=os.environ.get("BIODASH_FORECAST_LOG") == "0",
                     help="don't write the inference to Forecasts/<day>/<time>_forecast_<kind>.csv "
                          "(env BIODASH_FORECAST_LOG=0)")

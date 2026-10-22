@@ -1,13 +1,13 @@
-from starlette.concurrency import run_in_threadpool
 import asyncio
 import os
 import glob
 import json
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 import bt_debug
@@ -139,6 +139,19 @@ async def lifespan(app: FastAPI):
 # --- APP INITIALIZATION ---
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=os.path.join(WEB_DIR, "static")), name="static")
+
+
+@app.middleware("http")
+async def _proxied_is_not_local(request, call_next):
+    """Behind a proxy on this computer (tailscale serve: the share link) every request arrives from 127.0.0.1.
+    Use the forwarded address instead, so "this computer only" (power, updates, restart, the forecast
+    service's routes) still means this computer and not everyone with the link."""
+    h = request.headers
+    fwd = h.get("tailscale-user-login") or h.get("x-forwarded-for") or h.get("forwarded")
+    if fwd:
+        first = (h.get("x-forwarded-for") or "").split(",")[0].strip()
+        request.scope["client"] = (first if first and first not in ("127.0.0.1", "::1") else "proxied", 0)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -286,6 +299,46 @@ def connect_device(req: ConnectRequest):
         json.dump({"action": "connect", "address": req.address}, f)
     os.replace(tmp, COMMAND_FILE)  # atomic, so the worker never reads a half-written command
     return {"status": "command_sent"}
+
+# ---------- stream-lane-lab's API (ReaLLM-Forge PR #924) for the H10 models ----------
+# GET /api/models and POST /api/forecast (history in real units on the 8 ms grid -> predictions), answered by
+# forecast_service.py (it holds the models) on 127.0.0.1:BIODASH_FORECAST_API_PORT and passed on from here.
+FORECAST_API = f"http://127.0.0.1:{os.environ.get('BIODASH_FORECAST_API_PORT', '5011')}"
+
+
+def _service_call(path, body=None, timeout=60):
+    import urllib.error
+    import urllib.request
+    req = urllib.request.Request(FORECAST_API + path, data=None if body is None else json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"}, method="GET" if body is None else "POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, json.loads(r.read() or b"null")
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read() or b"null")
+        except ValueError:
+            return e.code, {"detail": str(e)}
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return 503, {"detail": f"The forecast service isn't answering ({e}). It starts with this dashboard "
+                               "when PyTorch and the models are installed (see forecast/README.md)."}
+
+
+@app.get("/api/models")
+async def forecast_models():
+    code, body = await run_in_threadpool(_service_call, "/models", None, 10)
+    return JSONResponse(body, status_code=code)
+
+
+@app.post("/api/forecast")
+async def forecast_api(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "bad JSON"}, status_code=422)
+    code, out = await run_in_threadpool(_service_call, "/forecast", body)
+    return JSONResponse(out, status_code=code)
+
 
 @app.post("/api/disconnect")
 def disconnect_device():
@@ -449,7 +502,7 @@ async def forecast_heartbeat(request: Request):
     return forecast_settings
 
 
-@app.post("/api/forecast")
+@app.post("/api/forecast/live")
 async def post_forecast(request: Request):
     """From forecast_service.py: one forecast (band, median, representative sample) -> the browsers."""
     if not _forecast_local(request):

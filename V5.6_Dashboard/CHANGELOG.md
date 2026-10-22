@@ -20,6 +20,17 @@ V5.5 plus a better look at the live ECG forecast, and changing straps without re
 - **The model weights carry over** to a new version: the forecast uses the same model's weights from an
   older release folder when its own has none (so upgrading from V5.5 keeps the forecast working), and from
   V5.6 on the updater links them into the new folder.
+- **The H10 models on stream-lane-lab's API** (ReaLLM-Forge PR #924): `GET /api/models` lists them with
+  their columns (name, unit, range, levels), context and row interval (8 ms); `POST /api/forecast` takes
+  `model_id`, `history` (rows in mV / mg on the 8 ms grid, oldest first), `horizon` (1-128 rows), `mode`
+  (`mean`, `greedy`, `sample`), `temperature`, `top_k`, `seed`, and returns `predictions` with
+  `latency_ms`, `history_frames_used`, `out_of_range_counts` as PR #924's server does. The forecast service
+  answers it (on 127.0.0.1:5011, `BIODASH_FORECAST_API_PORT`); the live overlay's own route is now
+  `/api/forecast/live`. `test_forecast_api.py` (13 checks, end to end).
+- **Share link:** `tailscale serve --bg --https=443 localhost:5001` gives the team
+  `https://<this computer>.<tailnet>.ts.net`. Requests through it count as other devices, so "this
+  computer only" settings still hold (with `--allow-power` they are allowed anyway: install without it
+  before sharing).
 - `polar_dashboard/test_worker_commands.py` (8 checks, a stand-in strap) and `test_forecast_log.py` (11).
 
 ## V5.5
