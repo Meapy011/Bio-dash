@@ -2,7 +2,7 @@
 # Sets up the live H10 forecasts on a Jetson Orin: PyTorch for the Jetson's GPU, transformers, the model
 # folders, then a timing check. Run it from the release folder, as yourself (no sudo):
 #
-#   ./tools/orin_setup.sh --models ~/Downloads/H10_models.zip     (or a folder holding ecg/ and ecg_acc/)
+#   ./tools/orin_setup.sh --models ~/Downloads/H10_hub_upload.zip   (or any zip / folder holding ecg/ (or ecg_only/) and ecg_acc/)
 #   ./tools/orin_setup.sh                                         (models already in polar_dashboard/forecast/models)
 #
 # What it does:
@@ -21,13 +21,14 @@
 # Options: --models <zip|folder>   --venv <dir>   --torch <version>   --index <url>   --no-bench
 #          --replace      take the whole model folders from --models (default: only the weights, and only
 #                         when they're the model this release's config.json describes)
+#          --own-torch    install PyTorch into the environment even when the system already has a working one
 #          --not-jetson   (testing this script elsewhere: PyPI's CPU torch, bench on the CPU)
 set -euo pipefail
 
 cd "$(dirname "$0")/.." || exit 1
 REL="$(pwd)"
 VENV="${BIODASH_FORECAST_VENV:-$HOME/.local/share/bio-dash/forecast-venv}"
-MODELS="" TORCH_VER="" INDEX="" BENCH=1 JETSON=1 REPLACE=0
+MODELS="" TORCH_VER="" INDEX="" BENCH=1 JETSON=1 REPLACE=0 OWN_TORCH=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --models) MODELS="$2"; shift 2 ;;
@@ -36,8 +37,9 @@ while [ $# -gt 0 ]; do
         --index) INDEX="$2"; shift 2 ;;
         --no-bench) BENCH=0; shift ;;
         --replace) REPLACE=1; shift ;;
+        --own-torch) OWN_TORCH=1; shift ;;
         --not-jetson) JETSON=0; shift ;;
-        -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
         *) echo "unknown option: $1 (see --help)"; exit 2 ;;
     esac
 done
@@ -80,17 +82,31 @@ if [ "$JETSON" = 1 ]; then
         die "the Jetson PyTorch wheels need Python 3.10 (JetPack 6's own). Found $("$PY" --version)."
 fi
 "$PY" -c 'import venv, ensurepip' 2>/dev/null || die "Python's venv module is missing: sudo apt install python3-venv"
+# A working GPU PyTorch already installed for this Python (e.g. by ReaLLM-Forge's
+# orin_dev_setup_scripts/00-setup-jetson-pytorch.sh, with cuDSS / cuSPARSELt system-wide) is used as it is:
+# the environment sees it (--system-site-packages) instead of installing its own. --own-torch / --torch skip this.
+SYSTORCH=0
+if [ "$JETSON" = 1 ] && [ "$OWN_TORCH" = 0 ] && [ -z "$TORCH_VER" ] && \
+   "$PY" -c 'import sys, torch; sys.exit(0 if torch.cuda.is_available() else 1)' >/dev/null 2>&1; then
+    SYSTORCH=1
+    say "Using the PyTorch already installed for $PY: $("$PY" -c 'import torch; print(torch.__version__)')"
+fi
 if [ ! -x "$VENV/bin/python" ]; then
     say "Making $VENV"
     mkdir -p "$(dirname "$VENV")"
-    "$PY" -m venv "$VENV"
+    if [ "$SYSTORCH" = 1 ]; then "$PY" -m venv --system-site-packages "$VENV"; else "$PY" -m venv "$VENV"; fi
+elif [ "$SYSTORCH" = 1 ]; then           # made earlier with its own torch: switch it to the system one
+    sed -i 's/^include-system-site-packages = false/include-system-site-packages = true/' "$VENV/pyvenv.cfg"
+    "$VENV/bin/python" -m pip uninstall -y -q torch >/dev/null 2>&1 || true
 fi
 VPY="$VENV/bin/python"
 "$VPY" -m pip install -q --upgrade pip
 
 # ---------------------------------------------------------------- 3. PyTorch, transformers
 TORCH_SPEC="torch${TORCH_VER:+==$TORCH_VER}"
-if [ "$JETSON" = 1 ]; then
+if [ "$SYSTORCH" = 1 ]; then
+    :                                    # the system's PyTorch (above)
+elif [ "$JETSON" = 1 ]; then
     # torch's own requirements from PyPI first, then torch ONLY from the Jetson index (--no-deps): with both
     # indexes at once pip would take whichever torch has the higher version, usually PyPI's, which can't
     # use the Orin's GPU.
@@ -107,7 +123,8 @@ say "transformers, safetensors"
 "$VPY" -m pip install -q "transformers>=4.40,<6" safetensors
 
 say "Checking PyTorch"
-if ! OUT=$("$VPY" - <<'EOF' 2>&1
+torch_check() {
+    "$VPY" - <<'EOF' 2>&1
 import torch
 print(f"torch {torch.__version__}, CUDA available: {torch.cuda.is_available()}"
       + (f" ({torch.cuda.get_device_name(0)})" if torch.cuda.is_available() else ""))
@@ -116,14 +133,56 @@ with torch.autocast(x.device.type, dtype=torch.bfloat16):
     (x @ x).sum().item()
 print("bf16 matmul OK")
 EOF
-); then
+}
+# The Jetson AI Lab torch builds (2.8+) link NVIDIA's cuDSS and cuSPARSELt, which JetPack 6 doesn't ship.
+# Fetch NVIDIA's aarch64 (Jetson) builds of the one that's missing into the forecast environment and load
+# them at Python start-up (a .pth file): no sudo, nothing changed outside $VENV.
+NV=https://developer.download.nvidia.com/compute
+NVLIB_URLS="libcudss=$NV/cudss/redist/libcudss/linux-aarch64/libcudss-linux-aarch64-0.7.1.4_cuda12-archive.tar.xz
+libcusparseLt=$NV/cusparselt/redist/libcusparse_lt/linux-aarch64/libcusparse_lt-linux-aarch64-0.8.1.1_cuda12-archive.tar.xz"
+fetch_nvidia_lib() {     # $1: libcudss | libcusparseLt
+    url=$(printf '%s\n' "$NVLIB_URLS" | sed -n "s/^$1=//p")
+    dest="$VENV/lib/nvidia-jetson"; tmp=$(mktemp -d)
+    say "Fetching NVIDIA's $1 for the Jetson ($(basename "$url"))"
+    "$VPY" - "$url" "$tmp/a.tar.xz" <<'EOF' || die "couldn't download $url"
+import sys, urllib.request
+urllib.request.urlretrieve(sys.argv[1], sys.argv[2])
+EOF
+    mkdir -p "$dest"
+    tar -xJf "$tmp/a.tar.xz" -C "$tmp"
+    find "$tmp" -path "*/lib/$1*.so*" -exec cp -P {} "$dest/" \;
+    rm -rf "$tmp"
+    ls "$dest/$1.so.0" >/dev/null 2>&1 || die "$1.so.0 wasn't in $url"
+    site=$("$VPY" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+    cat > "$site/biodash_nvidia_libs.py" <<'EOF'
+"""Loads the NVIDIA libraries tools/orin_setup.sh put in <venv>/lib/nvidia-jetson (cuDSS, cuSPARSELt), so the
+Jetson torch build finds them without LD_LIBRARY_PATH. Run at start-up by biodash_nvidia_libs.pth."""
+import ctypes, os, sys
+for _name in ("libcusparseLt.so.0", "libcudss.so.0"):
+    _p = os.path.join(sys.prefix, "lib", "nvidia-jetson", _name)
+    if os.path.exists(_p):
+        try:
+            ctypes.CDLL(_p, mode=ctypes.RTLD_GLOBAL)
+        except OSError as _e:
+            print(f"biodash_nvidia_libs: couldn't load {_p}: {_e}", file=sys.stderr)
+EOF
+    echo "import biodash_nvidia_libs" > "$site/biodash_nvidia_libs.pth"
+}
+tries=0
+until OUT=$(torch_check); do
+    missing=$(echo "$OUT" | grep -o "libcudss\|libcusparseLt" | head -1 || true)
+    tries=$((tries + 1))
+    if [ "$JETSON" = 1 ] && [ -n "$missing" ] && [ "$tries" -le 2 ]; then
+        fetch_nvidia_lib "$missing"
+        continue
+    fi
     echo "$OUT" | tail -5
     if echo "$OUT" | grep -q "libcusparseLt\|libcudss\|libcudnn"; then
         echo "  PyTorch needs an NVIDIA library that isn't installed (named above). Install it for"
         echo "  aarch64-jetson (NVIDIA's \"Installing PyTorch for Jetson Platform\" guide lists them), then rerun."
     fi
     die "PyTorch doesn't work in $VENV"
-fi
+done
 echo "$OUT" | sed 's/^/  /'
 if [ "$JETSON" = 1 ] && ! echo "$OUT" | grep -q "CUDA available: True"; then
     die "PyTorch installed but doesn't see the GPU: check that $INDEX matches this JetPack (--index to pick another)"
@@ -140,6 +199,8 @@ if [ -n "$MODELS" ]; then
     for m in ecg ecg_acc; do
         # the folder named ecg / ecg_acc that has a config.json (anywhere inside, e.g. out/hf_models/best/ecg)
         found=$(find "$SRC" -type f -name config.json -path "*/$m/config.json" | head -1)
+        # the Hugging Face upload (H10_hub_upload*.zip) calls the ECG-only model ecg_only/
+        [ -z "$found" ] && [ "$m" = ecg ] && found=$(find "$SRC" -type f -name config.json -path "*/ecg_only/config.json" | head -1)
         if [ -z "$found" ]; then echo "  (no $m/ model in $MODELS)"; continue; fi
         src=$(dirname "$found")
         if [ -f "$DEST/$m/config.json" ] && [ "$REPLACE" = 0 ]; then

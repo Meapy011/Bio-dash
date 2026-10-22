@@ -1,4 +1,5 @@
 # V5.5: live ECG and accelerometer forecasts in Polar-dash (🔮 pills on both cards)
+- Updates: upgrading to a new version works again when fleet.py's scheduled uploads are installed (they were taken for dashboards)
 - forecast_service.py: the H10 models forecast the next second every 0.5 s, as a band and a dashed line ahead of the trace
 - analysis_dashboard/waves.py and tools/export_waves.py: the 125 Hz rows the models use, live and offline
 - replay_session.py: play a recording back through the dashboard; replays are never mixed into real recordings, exports or uploads

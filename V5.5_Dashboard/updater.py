@@ -156,8 +156,10 @@ def unit_dir():
 
 def installed_units():
     try:
+        # not biodash-update (this updater) or biodash-push* (tools/fleet.py's scheduled uploads): not dashboards
         return sorted(f[len("biodash-"):-len(".service")] for f in os.listdir(unit_dir())
-                      if f.startswith("biodash-") and f.endswith(".service") and not f.startswith("biodash-update"))
+                      if f.startswith("biodash-") and f.endswith(".service")
+                      and not f.startswith(("biodash-update", "biodash-push")))
     except OSError:
         return []
 
