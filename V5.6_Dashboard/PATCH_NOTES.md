@@ -1,4 +1,5 @@
 # V5.6: the pen traces over the forecast, an inference strip under the ECG (logged as CSV), and Disconnect
+- Pages and scripts are rechecked on every load, so the browser shows a new version straight after an update (no hard refresh)
 - The forecast stays under the live ECG after the pen passes, so prediction and real beat are on top of each other
 - 🔮 Inference strip under the monitor: what the model forecast for each moment, lined up with the ECG
 - The inference is logged to Documents/Bio-dash/Forecasts/<day>/<time>_forecast_ecg.csv (mV, with how far ahead)

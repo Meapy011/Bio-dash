@@ -72,6 +72,16 @@ async def explain_errors(request, exc):
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 
+@app.middleware("http")
+async def _revalidate_pages(request, call_next):
+    """The page and its scripts are checked with the server on every load (a quick 304 when unchanged), so a
+    browser never keeps running the previous version's JavaScript after an update."""
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 def _read_json(path, default):
     try:
         with open(path) as f:

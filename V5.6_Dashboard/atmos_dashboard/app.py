@@ -135,6 +135,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=os.path.join(WEB_DIR, "static")), name="static")
 
+
+@app.middleware("http")
+async def _revalidate_pages(request, call_next):
+    """The page and its scripts are checked with the server on every load (a quick 304 when unchanged), so a
+    browser never keeps running the previous version's JavaScript after an update."""
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 # --- ENDPOINTS ---
 @app.get("/api/scan-results")
 def get_scan_results():
