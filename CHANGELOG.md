@@ -1,5 +1,42 @@
 # Changelog
 
+## V6.0
+
+V5.8 plus a new device and dashboard: **Muse-dash**, for the **Muse S Athena** headband (port 5006).
+The first time Bio-dash reads the brain: EEG, brain-wave band powers and blood oxygenation, beside the heart
+(Polar), blood oxygen (O2 ring), air (Atmos) and water (HidrateSpark).
+
+- **Muse-dash** (`muse_dashboard/`, `./run_dashboard.sh`, `./launch.sh muse`, `./biodash.py install muse`):
+  - **Live EEG** from the four head sensors (TP9, AF7, AF8, TP10; **+ AUX** for the other 4), 256 Hz, with
+    display filters (1-40 Hz, 60 / 50 Hz notch or none, or raw) and a scale from ±25 to ±500 µV.
+  - **Brain waves:** delta, theta, alpha, beta and gamma as a share of the power every second (last 2 s,
+    Hann window), averaged over the sensors in contact, now and over the last 2 minutes; an **Alpha share**
+    tile with its trend.
+  - **Sensor contact** per sensor (good / fair / bad / off).
+  - **fNIRS:** oxy- and deoxy-haemoglobin change on each side of the forehead from the 730 and 850 nm light
+    (modified Beer-Lambert) against a 10 s baseline, with **⟲ Zero** for a new one.
+  - **Heart rate and HRV from the forehead PPG** (the clearest optical channel, picked every second), with
+    the pulse waveform.
+  - **Head motion and position** (tilt, turning, still / moving) and **battery**.
+  - **Presets** in the debug panel (default `p1041`: EEG 8 ch, optics 16 ch, motion, battery); a new preset
+    starts a new session. The debug panel also has the rates against 256 / 64 / 52 Hz, dropped samples,
+    clock restarts, firmware, the pulse channel and the radio choice.
+  - **Recordings** in `Muse/<headband>/<date>/`: `eeg`, `optics`, `imu`, `bands`, `heart`, `fnirs`,
+    `battery`, timed by the headband's own clock mapped onto the computer's (as the H10's).
+  - **In the V6 design** (from the single-app redesign: its colours, cards, tiles, status pill and charts, in
+    every theme), as the **Brain** page; auto-reconnect, device names, tile trends, themes, the sidebar and
+    updates as in the other dashboards.
+  - The protocol follows [OpenMuse](https://github.com/DominiqueMakowski/OpenMuse) (MIT); see
+    `muse_dashboard/PROTOCOL.md`. **Not yet tried on a real headband**: the decoder matches OpenMuse's on its
+    test packets, everything else has run against the stand-in. `muse_dashboard/README.md` has a checklist
+    for the first session.
+  - **`MUSE_FAKE=1`**: a stand-in headband sending packets in the real format, to try everything without one.
+  - Tests: `test_muse_protocol.py` (10, the decoder against OpenMuse's), `test_muse_signal.py` (5),
+    `test_muse_dashboard.py` (28 checks: worker, files, app, page and presets with the stand-in).
+- The sidebar lists **Muse** (5006) in every dashboard; `launch.sh`, `biodash.py`, `setup_env.sh`,
+  `fetch_vendor.sh` and `requirements.txt` know it.
+- The single-app redesign that was being built as "6.0" is kept on its own branch (`v6-unified`), for later.
+
 ## V5.8
 
 V5.6 plus a second page for the forecast models: the Stream Lane Lab viewer from ReaLLM-Forge PR #924,
@@ -24,6 +61,11 @@ on the live strap.
   one closest to the median. The median and band are unchanged, and so is the error readout (it uses the
   median). Falls back to the old choice when the last 2 s hold fewer than two clear beats.
   `BIODASH_FORECAST_REP=median` turns it off. `test_rhythm_pick.py` (9 checks).
+- `tools/portable_polar_tests/`: the tests for **Portable Polar**, the Polar H10 in the browser (its own
+  repo: Web Bluetooth, recordings in Bio-dash's format on the runner's disk, the ECG forecast on their GPU).
+  They check it against the code here: parsing against polar-python, timestamps against `stream_clock.py`,
+  the 8 ms rows against `waves.py`, the line drawn against `forecast_service.py`, the model in the browser
+  against onnxruntime, and the page with a stand-in strap.
 
 ## V5.6
 

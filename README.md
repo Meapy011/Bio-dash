@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`, `v6.0`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V5.8_Dashboard/`](V5.8_Dashboard) | **V5.8 (latest)** | V5.6 plus the 🧪 Lab: ReaLLM-Forge PR #924's Stream Lane Lab viewer on the live strap, to try the forecast models one forecast at a time. |
+| [`V6.0_Dashboard/`](V6.0_Dashboard) | **V6.0 (latest)** | V5.8 plus **Muse-dash** for the Muse S Athena headband: live EEG, brain-wave band powers, sensor contact, fNIRS, heart rate from the forehead PPG, head motion. |
+| [`V5.8_Dashboard/`](V5.8_Dashboard) | V5.8 | V5.6 plus the 🧪 Lab: ReaLLM-Forge PR #924's Stream Lane Lab viewer on the live strap, to try the forecast models one forecast at a time. |
 | [`V5.6_Dashboard/`](V5.6_Dashboard) | V5.6 | V5.5 plus the pen tracing over the live ECG forecast, an inference strip under the ECG (logged as CSV in `Forecasts/`), and a Disconnect button to change straps without restarting. |
 | [`V5.5_Dashboard/`](V5.5_Dashboard) | V5.5 | V5.3 plus live forecasts in Polar-dash: the next second of the ECG and the accelerometer, predicted by the H10 models and drawn ahead of the trace (needs PyTorch; `tools/orin_setup.sh` sets it up on a Jetson). Also the Polar H10 timestamp fix, replays kept out of real recordings, and `tools/export_waves.py`. |
 | [`V5.3_Dashboard/`](V5.3_Dashboard) | V5.3 | V5.2 plus an export for ReaLLM-Forge: the signals on one clock as an integer CSV that `data/csv_mc_int` takes as it is (fixed range per signal, -1 = not recording), with its `--range` list and a decoder for sampled CSVs. |
@@ -35,7 +36,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v
 ## Quick start
 
 ```bash
-cd V5.8_Dashboard
+cd V6.0_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -43,7 +44,7 @@ Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## How it works
 
-Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V5.8_Dashboard/docs/ARCHITECTURE.md`](V5.8_Dashboard/docs/ARCHITECTURE.md).
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V6.0_Dashboard/docs/ARCHITECTURE.md`](V6.0_Dashboard/docs/ARCHITECTURE.md).
 
 ## Keeping data out of the repo
 
