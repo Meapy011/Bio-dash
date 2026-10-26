@@ -33,6 +33,14 @@ The first time Bio-dash reads the brain: EEG, brain-wave band powers and blood o
   - **`MUSE_FAKE=1`**: a stand-in headband sending packets in the real format, to try everything without one.
   - Tests: `test_muse_protocol.py` (10, the decoder against OpenMuse's), `test_muse_signal.py` (5),
     `test_muse_dashboard.py` (28 checks: worker, files, app, page and presets with the stand-in).
+- **Every dashboard in the V6 design** (a V6.0 patch): the redesign's colours, page heads (Heart, Oxygen, Air,
+  Water, Omni, Analysis, Brain, each with its device's icon and colour), cards, tiles, buttons, status pills and
+  chart colours, in every theme from the sidebar. One shared `static/css/v6.css` and `static/js/v6.js` in every
+  dashboard (Analysis: its own stylesheet, on the same tokens); the pages work as before. The sidebar lists the
+  dashboards by those names.
+- **The forecast models are in the release** (a V6.0 patch): `polar_dashboard/forecast/models/{ecg,ecg_acc}/
+  model.safetensors` (49 + 69 MB). A new release folder no longer starts without them; PyTorch is still set up
+  on its own (`tools/orin_setup.sh`, which reuses a working system-wide Jetson PyTorch).
 - The sidebar lists **Muse** (5006) in every dashboard; `launch.sh`, `biodash.py`, `setup_env.sh`,
   `fetch_vendor.sh` and `requirements.txt` know it.
 - The single-app redesign that was being built as "6.0" is kept on its own branch (`v6-unified`), for later.

@@ -734,9 +734,9 @@ The **🔮 Forecast** pills on Polar-dash's ECG and accelerometer cards show the
 by the H10 models: a band (8 sampled futures) and a dashed line ahead of the live trace, with the
 running error beside the "repeat the last value" baseline. A research demo, not a medical device.
 
-- **Needs the models and PyTorch.** Copy `polar_dashboard/forecast/models/{ecg,ecg_acc}` from the
-  shared zip (the weights stay out of git), and install torch in Polar's `.venv`. Without them the
-  pills say so and the dashboard runs as before. On a Jetson Orin, `tools/orin_setup.sh` does it.
+- **Needs PyTorch.** The models are included from V6.0 (`polar_dashboard/forecast/models/{ecg,ecg_acc}`,
+  49 + 69 MB); PyTorch is not. On a Jetson Orin, `tools/orin_setup.sh` sets it up (it reuses a system-wide
+  Jetson PyTorch when there is one). Without it the pills say so and the dashboard runs as before.
 - **`forecast_service.py`** runs beside `app.py` (`run_dashboard.sh` starts it); `--bench` times it.
 - **Testing without the strap:** `polar_dashboard/replay_session.py` plays a recording back. It
   writes to a test folder (`BIODASH_DATA_DIR`), never into your recordings unless told to.

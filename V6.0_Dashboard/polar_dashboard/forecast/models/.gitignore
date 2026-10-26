@@ -1,4 +1,4 @@
-# The model weights (50 MB + 69 MB) stay out of git: copy forecast/models from the shared folder / zip.
-# (To ship them through GitHub and the updater instead, delete this file or track them with Git LFS.)
+# From V6.0 the model weights are in git (ecg/model.safetensors 49 MB, ecg_acc/model.safetensors 69 MB, under
+# GitHub's 100 MB limit; git stores an unchanged file once, so later releases don't add to the repo).
+# Older-style weights files are still kept out:
 *.bin
-*.safetensors

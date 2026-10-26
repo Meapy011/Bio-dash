@@ -66,7 +66,7 @@ Polar H10 ──BLE──> advanced_worker.py ──> <Documents>/Bio-dash/Polar
 | `check_replay.py` | Compares the service's context rows with the offline (training) rows of the replayed stretch |
 | `fast_forecast.py` | Fast sampler: static KV cache + one CUDA graph per decode step |
 | `modeling_csv_mc_int.py`, `configuration_csv_mc_int.py`, `processing_csv_mc_int.py` | The model code, copied from ReaLLM-Forge `hf_csv_mc_int/` |
-| `models/ecg`, `models/ecg_acc` | `config.json`, `pytorch_model.bin`, `columns.json`, `training_state.json`, `RUN.txt` |
+| `models/ecg`, `models/ecg_acc` | `config.json`, `model.safetensors` (in the repo from V6.0: 49 MB, 69 MB), `columns.json`, `training_state.json`, `RUN.txt` |
 | `../static/js/forecast.js` | Pills, chart bands, status text and running error |
 | `../static/js/ecg_monitor.js` | Bedside-monitor sweep, now with the forecast overlay canvas |
 | `../app.py` | `GET/POST /api/forecast/settings`, `POST /api/forecast/heartbeat`, `POST /api/forecast` |

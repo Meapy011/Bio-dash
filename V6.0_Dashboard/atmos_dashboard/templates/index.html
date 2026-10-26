@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atmos Air Quality Lab</title>
+    <title>Air · Atmos</title>
     <link rel="stylesheet" href="/static/css/tailwind.css">
     <script src="/static/vendor/chart.min.js"></script>
     <script src="/static/vendor/luxon.min.js"></script>
     <script src="/static/vendor/chartjs-adapter-luxon.min.js"></script>
     <script src="/static/vendor/chartjs-plugin-streaming.min.js"></script>
     <link rel="stylesheet" href="/static/css/themes.css">
+    <link rel="stylesheet" href="/static/css/v6.css">
     <script src="/static/js/themes.js"></script>
     <script src="/static/js/nicknames.js"></script>
 </head>
-<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
+<body class="v6 bg-slate-900 text-white font-sans min-h-screen flex flex-col">
 
     <header class="p-4 bg-slate-800 border-b border-slate-700 shadow-md">
         <div class="container mx-auto flex justify-between items-center max-w-7xl">
             <div>
-                <h1 class="text-xl font-bold text-emerald-400 tracking-wide">Atmos Air Quality Lab</h1>
-                <p id="subtitle" class="text-xs text-slate-400 mt-1">Atmos-Mini · Atmos-Sphere S4 / S5 · any CSV / key=value / JSON device</p>
+                <h1><span class="glyph" style="--c:var(--air)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg></span>Air</h1>
+                <p id="subtitle">Atmos-Mini · Atmos-Sphere S4 / S5 · any CSV / key=value / JSON device</p>
             </div>
             <div class="flex items-center gap-2">
                 <button id="debug-btn" class="px-3 py-1 rounded-full text-xs font-semibold border bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white transition-colors" title="Debug panel (D)">🐞 Debug</button>
@@ -164,5 +165,6 @@
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script src="/static/js/reconnect.js"></script>
+    <script src="/static/js/v6.js"></script>
 </body>
 </html>

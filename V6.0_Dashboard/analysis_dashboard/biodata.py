@@ -41,11 +41,11 @@ DAY_MS = 86_400_000
 # ---------------------------------------------------------------------------------- devices
 # family: (label, colour). Colours: a validated categorical set for the dark surface.
 FAMILIES = {
-    "heart":  ("Heart (Polar H10)", "#3987e5"),
-    "oxygen": ("Oxygen (O2 ring)", "#d95926"),
-    "air":    ("Air (Atmos)", "#199e70"),
-    "water":  ("Water (HidrateSpark)", "#c98500"),
-    "other":  ("Other", "#9085e9"),
+    "heart":  ("Heart (Polar H10)", "#fb7185"),
+    "oxygen": ("Oxygen (O2 ring)", "#a78bfa"),
+    "air":    ("Air (Atmos)", "#34d399"),
+    "water":  ("Water (HidrateSpark)", "#38bdf8"),
+    "other":  ("Other", "#94a3b8"),
 }
 FAMILY_ORDER = ["heart", "oxygen", "air", "water", "other"]
 

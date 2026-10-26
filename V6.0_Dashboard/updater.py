@@ -315,7 +315,7 @@ def copy_settings(old_abs, new_abs, log):
     for root, dirs, files in os.walk(old_abs):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
-            weights = name in ("model.safetensors", "pytorch_model.bin")   # forecast models: out of git, ~50 MB each
+            weights = name in ("model.safetensors", "pytorch_model.bin")   # forecast models (in git from V6.0), ~50 MB each
             if not weights and (not name.endswith(".json") or VOLATILE.match(name)):
                 continue
             src = os.path.join(root, name)

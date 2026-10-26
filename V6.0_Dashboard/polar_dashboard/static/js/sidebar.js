@@ -8,13 +8,13 @@
 // wide screens, as a slide-over drawer on narrow ones).
 (() => {
     const DASHBOARDS = [                                  // listed in port order
-        { name: 'Omni',      port: 5000, color: '#818cf8' },
-        { name: 'Polar H10', port: 5001, color: '#f43f5e' },
-        { name: 'Atmos',     port: 5002, color: '#34d399' },
-        { name: 'Viatom O2', port: 5003, color: '#38bdf8' },
-        { name: 'Hydro',     port: 5004, color: '#22d3ee' },
-        { name: 'Analysis',  port: 5005, color: '#a78bfa' },
-        { name: 'Muse',      port: 5006, color: '#e879f9' },
+        { name: 'Omni',      port: 5000, color: '#818cf8' },     // the V6 names and device colours
+        { name: 'Heart',     port: 5001, color: '#fb7185' },     // Polar H10
+        { name: 'Air',       port: 5002, color: '#34d399' },     // Atmos
+        { name: 'Oxygen',    port: 5003, color: '#a78bfa' },     // Viatom O2 ring
+        { name: 'Water',     port: 5004, color: '#38bdf8' },     // HidrateSpark
+        { name: 'Analysis',  port: 5005, color: '#818cf8' },
+        { name: 'Brain',     port: 5006, color: '#e879f9' },     // Muse S Athena
     ];
     const here = parseInt(location.port || (location.protocol === 'https:' ? '443' : '80'));
     const urlFor = (d) => `${location.protocol}//${location.hostname}:${d.port}/`;

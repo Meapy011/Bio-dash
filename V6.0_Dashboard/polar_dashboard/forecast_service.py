@@ -207,7 +207,7 @@ def has_weights(d):
 
 
 def weights_elsewhere(model_dir, cfg):
-    """The weights stay out of git, so a new release folder starts without them: use the same model's (an
+    """Before V6.0 the weights stayed out of git, so a release folder could start without them: use the same model's (an
     identical config.json) from another release folder next to this one (<Bio-dash>/V*_Dashboard/...),
     newest first. tools/orin_setup.sh --models copies them in for good."""
     rel = os.path.relpath(os.path.abspath(model_dir), os.path.dirname(HERE))    # within the release folder

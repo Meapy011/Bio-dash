@@ -1,7 +1,5 @@
-# V6.0: Muse-dash, the Muse S Athena headband
-- Muse-dash (port 5006): live EEG with display filters, brain-wave band powers, sensor contact, fNIRS (oxy- / deoxy-haemoglobin per side), heart rate and HRV from the forehead PPG, head motion and battery
-- Presets in the debug panel (default p1041: everything); a new preset starts a new session
-- Recordings in Documents/Bio-dash/Muse/<headband>/<date>/: eeg, optics, imu, bands, heart, fnirs, battery
-- MUSE_FAKE=1 runs it with a stand-in headband (no Muse or Bluetooth needed)
-- Not yet tried on a real headband: muse_dashboard/README.md has a checklist for the first session
-- The sidebar, launch.sh, biodash.py and setup_env.sh know the new dashboard
+# Every dashboard in the V6 design, and the forecast models included
+- Every dashboard in the V6 design: Heart, Oxygen, Air, Water, Omni, Analysis and Brain pages with the redesign's colours, page heads, cards, buttons and chart colours, in every theme
+- The sidebar lists the dashboards by those names (Heart, Air, Oxygen, Water, Analysis, Brain, Omni)
+- The forecast models are included (polar_dashboard/forecast/models: 49 + 69 MB), so a new release folder doesn't need them copied in
+- PyTorch is still set up separately: on the Orin, tools/orin_setup.sh (reuses the system's Jetson PyTorch)

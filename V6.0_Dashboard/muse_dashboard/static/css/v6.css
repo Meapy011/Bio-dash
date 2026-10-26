@@ -1,7 +1,9 @@
-/* The V6 design (Bio-dash's single-app redesign, branch v6-unified: web/css/app.css), for Muse-dash.
-   Copied sections: tokens and themes, base, page, card, status, controls, charts. Below them: Muse-dash's own
-   pieces, and the V6.0 shared parts (sidebar trend panel, scanner, debug panel: Tailwind classes) mapped onto
-   the same tokens, so every theme from the sidebar applies to all of it. */
+/* The V6 design for every Bio-dash dashboard. Same file in every dashboard (like sidebar.js).
+   From Bio-dash's single-app redesign (branch v6-unified, web/css/app.css): tokens and themes, base, page, card,
+   status, controls, charts. Then: Muse-dash's own pieces, the V6.0 shared parts (sidebar, debug panel, scanner,
+   trend panel) and, at the end, the live dashboards' Tailwind classes, drawn with the same tokens so every
+   page and every theme from the sidebar looks like V6. Load it last, after tailwind.css and themes.css;
+   the page's <body> gets class="v6". */
 /* ============================================================== tokens */
 :root {
   --bg: #0b1120;
@@ -407,3 +409,71 @@ main.page { padding: 24px clamp(16px, 3vw, 40px) 48px; max-width: 1280px; margin
 .scan-title .card-sub { font-weight: 400; }
 /* Tailwind's .hidden (the shared scripts and dashboard.js use it) must win over the V6 display rules */
 .v6 .hidden { display: none !important; }
+
+
+/* ============================================================== the live dashboards (Tailwind pages) */
+/* page: no top bar, the head sits on the page like the redesign's */
+body.v6 { background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }
+.v6 > header { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 26px 16px 4px; }
+.v6 > header > div { gap: 12px 16px; flex-wrap: wrap; }
+.v6 > header h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -.01em; color: var(--text) !important; display: flex; align-items: center; gap: 12px; }
+.v6 > header h1 .glyph { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.v6 > header h1 .glyph svg { width: 22px; height: 22px; }
+.v6 > header h1 + p { font-size: .95rem; color: var(--muted) !important; margin-top: 4px; }
+.v6 > header .flex.items-center.gap-2 { gap: 8px; flex-wrap: wrap; }
+
+/* device colours (the redesign's), for what the pages draw in their accent */
+:root:root .v6 .text-rose-500, :root:root .v6 .text-rose-400 { color: var(--heart); }
+:root:root .v6 .text-sky-400 { color: var(--oxygen); }
+:root:root .v6 .text-cyan-400 { color: var(--water); }
+
+/* cards and tiles */
+:root:root .v6 .bg-slate-900 { background: var(--bg); }
+:root:root .v6 .bg-slate-800\/50, :root:root .v6 .bg-slate-800\/60 { background: var(--surface); }
+:root:root .v6 .bg-slate-900\/50, :root:root .v6 .bg-slate-900\/60 { background: var(--bg-2); }
+:root:root .v6 .border-slate-800 { border-color: var(--line); }
+:root:root .v6 .text-white { color: var(--text); }
+:root:root .v6 .text-slate-600 { color: var(--faint); }
+:root:root .v6 main .rounded-2xl.border { border-color: var(--line); }
+/* card titles: sentence case, like the redesign's card heads; tile labels small and muted */
+:root:root .v6 main h2.uppercase { text-transform: none; letter-spacing: -.005em; font-size: 1rem; font-weight: 650; color: var(--text); }
+:root:root .v6 main .text-center > h2.uppercase, :root:root .v6 main .text-center h2.uppercase.text-sm { font-size: .82rem; color: var(--muted); font-weight: 650; }
+.v6 main h3.uppercase { text-transform: none; letter-spacing: 0; font-weight: 650; }
+.v6 main .font-extrabold { font-weight: 750; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+
+/* buttons: the redesign's (rounded rectangle, surface, 620 weight); status badges stay pills */
+.v6 button.rounded-full.border, .v6 a.rounded-full.border {
+  border-radius: var(--r-sm); min-height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: .85rem; font-weight: 620; letter-spacing: 0; text-transform: none;
+  background: var(--surface-2); border-color: var(--line-2); color: var(--text); }
+.v6 button.rounded-full.border:hover, .v6 a.rounded-full.border:hover { background: var(--surface-3); text-decoration: none; }
+.v6 button.font-mono.rounded-full { font-family: var(--mono); font-size: .8rem; }
+.v6 span.rounded-full.border { font-size: .8rem; font-weight: 650; padding: 4px 11px; }
+/* a switched-on button (the pages mark it with an accent colour class) */
+:root:root .v6 button.rounded-full.text-rose-400, :root:root .v6 button.rounded-full.text-violet-300,
+:root:root .v6 button.rounded-full.text-emerald-400, :root:root .v6 button.rounded-full.text-sky-400 {
+  border-color: var(--brand-2); color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 12%, var(--surface-2)); }
+/* solid action buttons (Connect, Save ...) in the brand colour */
+:root:root .v6 button.bg-sky-600, :root:root .v6 button.bg-emerald-600, :root:root .v6 button.bg-cyan-600,
+:root:root .v6 button.bg-indigo-600, :root:root .v6 button.bg-violet-600, :root:root .v6 button.bg-rose-600 {
+  background: var(--brand); color: var(--brand-ink); border-radius: var(--r-sm); font-weight: 650; }
+:root:root .v6 button.bg-sky-600:hover, :root:root .v6 button.bg-emerald-600:hover, :root:root .v6 button.bg-cyan-600:hover,
+:root:root .v6 button.bg-indigo-600:hover, :root:root .v6 button.bg-violet-600:hover, :root:root .v6 button.bg-rose-600:hover {
+  background: color-mix(in srgb, var(--brand) 85%, #fff); }
+
+/* status colours on the tokens */
+:root:root .v6 .text-emerald-400, :root:root .v6 .text-emerald-300 { color: var(--ok); }
+:root:root .v6 .text-amber-400, :root:root .v6 .text-amber-300 { color: var(--warn); }
+:root:root .v6 .text-red-400, :root:root .v6 .text-red-300 { color: var(--bad); }
+:root:root .v6 .bg-emerald-500\/20, :root:root .v6 .bg-emerald-500\/10 { background: color-mix(in srgb, var(--ok) 12%, transparent); }
+:root:root .v6 .bg-amber-500\/20, :root:root .v6 .bg-amber-500\/10 { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+:root:root .v6 .bg-red-500\/20, :root:root .v6 .bg-red-500\/10 { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+:root:root .v6 .border-emerald-500\/30, :root:root .v6 .border-emerald-500\/40 { border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+:root:root .v6 .border-amber-500\/30, :root:root .v6 .border-amber-500\/40 { border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+:root:root .v6 .border-red-500\/30, :root:root .v6 .border-red-500\/40 { border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+
+/* inputs */
+:root:root .v6 main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), :root:root .v6 main select {
+  background: var(--bg-2); border-color: var(--line-2); color: var(--text); border-radius: var(--r-sm); }
+:root:root .v6 main input:focus, :root:root .v6 main select:focus { border-color: var(--brand-2); box-shadow: var(--ring); outline: none; }
