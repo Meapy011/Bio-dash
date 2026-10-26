@@ -1,4 +1,4 @@
 # Requirements live with each release -- install the one you're running:
-#   pip3 install -r V6.0_Dashboard/requirements.txt
-# or run V6.0_Dashboard/setup_env.sh for an isolated .venv.
--r V6.0_Dashboard/requirements.txt
+#   pip3 install -r V6.2_Dashboard/requirements.txt
+# or run V6.2_Dashboard/setup_env.sh for an isolated .venv.
+-r V6.2_Dashboard/requirements.txt

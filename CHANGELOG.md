@@ -1,5 +1,18 @@
 # Changelog
 
+## V6.2
+
+V6.0 with the forecasts working on a Jetson Orin out of the box.
+
+- **`tools/orin_setup.sh` installs transformers 4.x and a current Pillow.** It used to take the newest
+  transformers (5.x, which also needs PyTorch 2.6+), and with the system's Jetson PyTorch the environment also
+  sees the system's packages, whose Pillow (9.0, JetPack 6 / Ubuntu 22.04) lacks `Image.Resampling`: every model
+  load failed with "Could not import module 'PreTrainedModel'". Now: `transformers>=4.40,<5` (as the models were
+  tested) and `pillow>=9.1` in the forecast environment itself, then a check that transformers imports, which
+  stops the script with the real error if it doesn't. Running it again fixes an environment made before.
+- **The forecast's "couldn't load" message says how to see the real error** (transformers hides it) and how to
+  fix the usual cause.
+
 ## V6.0
 
 V5.8 plus a new device and dashboard: **Muse-dash**, for the **Muse S Athena** headband (port 5006).
