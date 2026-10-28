@@ -536,10 +536,16 @@ class Radios:
     def __init__(self, radios, callback):
         self.radios, self.callback, self.scanners = radios, callback, {}
 
+
+    def _heard_on(self, hci):
+        """A scan callback for one radio. Exactly (device, advertisement): newer bleak (1.x) refuses a callback with
+        any other signature, a lambda with a default argument included ("callback must be callable with 2
+        parameters"), and every scan then failed."""
+        return lambda d, adv: self.callback(hci, d, adv)
     async def start(self):
         for a in self.radios:
             hci = a["name"]
-            sc = BleakScanner(lambda d, adv, hci=hci: self.callback(hci, d, adv), **bt_debug.bluez_args(hci))
+            sc = BleakScanner(self._heard_on(hci), **bt_debug.bluez_args(hci))
             try:
                 await sc.start()
                 self.scanners[hci] = sc
@@ -624,7 +630,7 @@ async def scan():
     set_status("scanning")
     found, cut_short = {}, False
 
-    def on_adv(device, adv, hci=None):
+    def on_adv(device, adv):           # exactly (device, advertisement): newer bleak refuses any other signature
         # Unnamed devices are kept too (shown with "Show all"): some bottles / firmware
         # advertise the name only in a scan response, or not at all.
         name = device.name or adv.local_name or ""
@@ -651,7 +657,7 @@ async def scan():
 
     try:
         if many:
-            radios = Radios(many, lambda hci, d, adv: on_adv(d, adv, hci))
+            radios = Radios(many, lambda hci, d, adv: on_adv(d, adv))
             await radios.start()
             try:
                 await listen()

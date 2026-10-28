@@ -176,7 +176,7 @@ class Table:
 
 async def scan(a):
     t = Table(a)
-    scanner = BleakScanner(detection_callback=t.heard, adapter=a.adapter) if a.adapter else BleakScanner(detection_callback=t.heard)
+    scanner = BleakScanner(detection_callback=t.heard, bluez={"adapter": a.adapter}) if a.adapter else BleakScanner(detection_callback=t.heard)
     live = sys.stdout.isatty() and not a.plain
     await scanner.start()
     try:
@@ -208,11 +208,11 @@ async def services(a):
     print(f"Looking for '{target}' (wake it if it only advertises when moved)…")
     dev = None
     if ":" in target and len(target) == 17:
-        dev = await BleakScanner.find_device_by_address(target, timeout=a.seconds, adapter=a.adapter) if a.adapter \
+        dev = await BleakScanner.find_device_by_address(target, timeout=a.seconds, bluez={"adapter": a.adapter}) if a.adapter \
             else await BleakScanner.find_device_by_address(target, timeout=a.seconds)
     else:
         f = lambda d, ad: target.lower() in ((ad.local_name or d.name or "").lower())
-        dev = await BleakScanner.find_device_by_filter(f, timeout=a.seconds, adapter=a.adapter) if a.adapter \
+        dev = await BleakScanner.find_device_by_filter(f, timeout=a.seconds, bluez={"adapter": a.adapter}) if a.adapter \
             else await BleakScanner.find_device_by_filter(f, timeout=a.seconds)
     if not dev:
         sys.exit("Not heard. Check the name with a plain scan first.")

@@ -12,6 +12,12 @@ V6.0 with the forecasts working on a Jetson Orin out of the box.
   stops the script with the real error if it doesn't. Running it again fixes an environment made before.
 - **The forecast's "couldn't load" message says how to see the real error** (transformers hides it) and how to
   fix the usual cause.
+- **Hydro-dash sees bottles again with a newer bleak.** bleak 1.x and later refuse a scan callback that
+  doesn't take exactly two parameters (device, advertisement), and Hydro's scanner had a third, optional one:
+  every scan failed with "callback must be callable with 2 parameters", so no bottle was ever listed (the other
+  dashboards were fine). Both of Hydro's scans (one radio, and "Any" across several) now pass exactly two.
+- **`tools/ble_scan.py --adapter` works with a newer bleak** (`bluez={"adapter": ...}` instead of the removed
+  `adapter=`).
 
 ## V6.0
 
