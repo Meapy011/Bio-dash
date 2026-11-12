@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`, `v6.0`, `v6.2`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`, `v6.0`, `v6.2`, `v6.3`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V6.2_Dashboard/`](V6.2_Dashboard) | **V6.2 (latest)** | V6.0 with the live forecasts working on a Jetson Orin out of the box (`tools/orin_setup.sh` installs transformers 4.x and a current Pillow). |
+| [`V6.3_Dashboard/`](V6.3_Dashboard) | **V6.3 (latest)** | V6.2 plus a live R-R forecast on the Heart page: the next beats' R-R from the ECG + R-R model (a proof of concept), scored against holding the last R-R. |
+| [`V6.2_Dashboard/`](V6.2_Dashboard) | V6.2 | V6.0 with the live forecasts working on a Jetson Orin out of the box (`tools/orin_setup.sh` installs transformers 4.x and a current Pillow). |
 | [`V6.0_Dashboard/`](V6.0_Dashboard) | V6.0 | V5.8 plus **Muse-dash** for the Muse S Athena headband: live EEG, brain-wave band powers, sensor contact, fNIRS, heart rate from the forehead PPG, head motion. |
 | [`V5.8_Dashboard/`](V5.8_Dashboard) | V5.8 | V5.6 plus the 🧪 Lab: ReaLLM-Forge PR #924's Stream Lane Lab viewer on the live strap, to try the forecast models one forecast at a time. |
 | [`V5.6_Dashboard/`](V5.6_Dashboard) | V5.6 | V5.5 plus the pen tracing over the live ECG forecast, an inference strip under the ECG (logged as CSV in `Forecasts/`), and a Disconnect button to change straps without restarting. |
@@ -37,7 +38,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v
 ## Quick start
 
 ```bash
-cd V6.2_Dashboard
+cd V6.3_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -45,7 +46,7 @@ Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## How it works
 
-Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V6.2_Dashboard/docs/ARCHITECTURE.md`](V6.2_Dashboard/docs/ARCHITECTURE.md).
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V6.3_Dashboard/docs/ARCHITECTURE.md`](V6.3_Dashboard/docs/ARCHITECTURE.md).
 
 ## Keeping data out of the repo
 

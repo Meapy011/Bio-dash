@@ -1,5 +1,28 @@
 # Changelog
 
+## V6.3
+
+V6.2 plus a third live forecast: **R-R**, from the ECG + R-R model (the R-R plan v2 proof of concept,
+2026-11-05).
+
+- **🔮 Forecast on the Heart Rate Variability (R-R) card.** The next beats the model forecasts in the coming
+  second, on the R-R chart: a ring at each beat's time and R-R (the median of the samples), a bar from the
+  lowest to the highest R-R the samples gave, and small dots for the last beats as the model sees them. The status
+  shows the next R-R and its heart rate, and the running error: each beat's R-R against the last forecast made
+  before the strap reported it, over the last 60 beats, next to repeating the last R-R.
+- **The model is included:** `polar_dashboard/forecast/models/ecg_rr` (`hf_g125_ecg_rr_d3_6L_384D_40k`, step
+  26,250; 13.5 M parameters, 52 MB), the same weights as the Hugging Face folder `ecg_rr/`.
+- **`polar_dashboard/rr_lane.py` builds the R-R lane live** from the session's `_rr.csv`, the way the training
+  export made it (beats chained from the strap's R-R messages, anchored to their arrival; a straight line
+  between beats), with the newest beat's R-R held after it ("hold": a live forecast can't know the next beat).
+  It matches the PoC's export code beat for beat and row for row; `test_rr_lane.py` checks it.
+- **`forecast_service.py`** tails the `_rr.csv` too, has an `rr` overlay (`--rr-model`, setting `rr`) and adds
+  `beats`, `known` and `rr_score` to its R-R forecasts; `--bench` times all three models. `app.py` relays
+  `rr_forecast`. `tools/orin_setup.sh --models` installs and times `ecg_rr` as well.
+- **Expect it to be about as good as holding the last R-R.** That's what the proof of concept measured on
+  held-out data (9.31 vs 9.48 ms), and its rebuilt beats sit a median 456 ms after the ECG's R peaks. The overlay
+  is for watching the model live and for dropping plan v2's models into the same folder.
+
 ## V6.2
 
 V6.0 with the forecasts working on a Jetson Orin out of the box.
