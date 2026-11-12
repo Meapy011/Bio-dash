@@ -1,5 +1,51 @@
 # Changelog
 
+## V8.0
+
+**One app.** Everything Bio-dash does, in one server on one port with one service, built on the
+first 6.0 one-app design and brought up to date with all that came after it. Recordings are
+unchanged.
+
+- **One server** (`server.py`, port 5000) runs the Bluetooth worker of each device that's on,
+  serves each device's API at `/api/d/<device>` and sends live data to the pages over one
+  WebSocket. The separate web servers (`app.py` on 5000 – 5006), their templates, their copies of
+  the shared scripts and Omni's own engine are gone. Every device folder is now the same pair:
+  a worker and `api.py`.
+- **People** (Settings → People, up to 3). The first person's strap and ring are `heart` and
+  `oxygen`, as with one person. Each extra person gets one more of the same worker and API
+  (`heart-p2`, `oxygen-p2` …) with their state in `~/.config/bio-dash/people/<id>/`. A switcher on
+  Heart and Oxygen picks whose; Home shows a card each.
+  - **Compare** page: a row per person (heart rate, HRV, SpO₂, ring pulse, connection), shared
+    charts over 5 min – 1 h, and everyone's ECG under each other. A colour and a line style each.
+  - A strap or ring belongs to one person: the finder says who has it, and *Move here* takes it over.
+  - Radios are shared out when there are two or more people (straps take the USB dongles first);
+    Settings → Bluetooth radios warns when there are more straps than radios. A pinned radio wins.
+  - Each page and API follows its own worker's recording instead of "the newest file".
+  - **Analysis** no longer merges two people's straps or rings into one line: when a range holds
+    more than one, you pick which (the first person's by default).
+- **Brain** (Muse S Athena) is a page of the app: EEG lanes, bands (now and over 2 minutes),
+  fNIRS with *Zero*, pulse, motion, head position, the preset, and a Home card.
+- **Forecasts:** a *Forecast* button by the ECG, the beat-to-beat chart (the R-R model's next
+  beats) and the motion chart (the ECG + accelerometer model), each with its live error. The
+  model lab is served at `/lab`. Settings → Forecasts shows what the service is doing.
+- **Settings**, in sections with a jump bar: Devices, People, Look (themes, *Keep this screen
+  on*), Forecasts, Bluetooth radios, Updates, This computer, About.
+- **Heart:** *Disconnect* in the Device sheet (Brain too). The Polar worker now has both V7's
+  disconnect / switch commands and the stream-refusal handling ("the strap refused the ECG
+  stream", with the reason), which had lived in different versions.
+- **Water:** the "now tap *It's full*" calibration banner shows straight away.
+- **Demo** (`./launch.sh --demo`): a made-up headband, made-up forecasts, and distinct readings
+  per person; it keeps its state in the scratch folder, never in the device folders.
+- **Fixed:** a page that finished loading after you had left it could throw a script error.
+- **Tests:** `test_server.py` (69 checks: API, people, moving a strap, Analysis per unit,
+  forecasts, recordings) and the new `test_web.py` (every page in a browser, adding a person,
+  phone width). The worker, protocol and exporter tests are unchanged and pass.
+- **Upgrading:** `./biodash.py install` removes the old per-dashboard services (including
+  `biodash-muse` and `biodash-omni`) and turns on the devices they ran. Paired devices, radio pins
+  and settings carry over; Omni's people (V7.0) are added again in Settings → People.
+- **Not yet tried on hardware:** several people at once in this form (the radio sharing follows
+  V7's rule), and the merged Polar worker.
+
 ## V7.0
 
 **Omni compares people:** up to 3 at once, each with a Polar H10 and an O2 ring, on one page.

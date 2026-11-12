@@ -10,11 +10,12 @@ with a **web app** (live charts in the browser).
 ## Versions
 
 Each release lives in its own folder with its own README; **use the newest**. Every release is
-also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`, `v6.0`, `v6.2`, `v6.3`, `v7.0`), so you can check out any of them.
+also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v5.2`, `v5.3`, `v5.5`, `v5.6`, `v5.8`, `v6.0`, `v6.2`, `v6.3`, `v7.0`, `v8.0`), so you can check out any of them.
 
 | Folder | Release | What it brought |
 |---|---|---|
-| [`V7.0_Dashboard/`](V7.0_Dashboard) | **V7.0 (latest)** | Omni compares up to 3 people, each with a Polar H10 and an O2 ring: shared heart-rate / SpO2 / HRV charts, a comparison table and a card per person, one H10 per radio. |
+| [`V8.0_Dashboard/`](V8.0_Dashboard) | **V8.0 (latest)** | One app on one port: Heart, Oxygen, Brain, Air, Water, Compare (up to 3 people), Analysis and Settings as pages, with the H10 forecasts and the model lab. |
+| [`V7.0_Dashboard/`](V7.0_Dashboard) | V7.0 | Omni compares up to 3 people, each with a Polar H10 and an O2 ring: shared heart-rate / SpO2 / HRV charts, a comparison table and a card per person, one H10 per radio. |
 | [`V6.3_Dashboard/`](V6.3_Dashboard) | V6.3 | V6.2 plus a live R-R forecast on the Heart page: the next beats' R-R from the ECG + R-R model (a proof of concept), scored against holding the last R-R. |
 | [`V6.2_Dashboard/`](V6.2_Dashboard) | V6.2 | V6.0 with the live forecasts working on a Jetson Orin out of the box (`tools/orin_setup.sh` installs transformers 4.x and a current Pillow). |
 | [`V6.0_Dashboard/`](V6.0_Dashboard) | V6.0 | V5.8 plus **Muse-dash** for the Muse S Athena headband: live EEG, brain-wave band powers, sensor contact, fNIRS, heart rate from the forehead PPG, head motion. |
@@ -39,7 +40,7 @@ also tagged (`v1`, `v2.0`, `v2.2`, `v2.3` … `v2.8`, `v3.0`, `v3.1`, `v5.0`, `v
 ## Quick start
 
 ```bash
-cd V7.0_Dashboard
+cd V8.0_Dashboard
 cat README.md            # full documentation for this release
 ```
 
@@ -47,7 +48,7 @@ Full history of changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## How it works
 
-Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V7.0_Dashboard/docs/ARCHITECTURE.md`](V7.0_Dashboard/docs/ARCHITECTURE.md).
+Flow diagrams of the whole suite (devices, radios, workers, recordings, the bottle protocol): [`V8.0_Dashboard/docs/ARCHITECTURE.md`](V8.0_Dashboard/docs/ARCHITECTURE.md).
 
 ## Keeping data out of the repo
 
