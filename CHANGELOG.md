@@ -1,6 +1,15 @@
 # Changelog
 
-## V8.0
+## V8.0 patch: the Forecast buttons stay put
+
+- **Fixed:** switching on the beat-to-beat (R-R) forecast made all three Forecast buttons disappear. The page
+  read the R-R error as `mae` / `hold`; forecast_service.py sends `model_ms` / `hold_ms`. The demo's made-up
+  forecasts had the same wrong names, so the tests didn't see it; they now use the service's.
+- **Fixed:** forecasts arriving slower than every 3 s (a CPU, or the Orin with all three overlays on) were
+  taken for a stopped service and kept flashing "Starting…". The page now learns how often each one comes.
+- A forecast the page can't read shows "Forecast on" and is logged to the browser console, instead of
+  taking the buttons away. Checked with the real models and service against the demo strap.
+
 
 **One app.** Everything Bio-dash does, in one server on one port with one service, built on the
 first 6.0 one-app design and brought up to date with all that came after it. Recordings are

@@ -320,12 +320,13 @@ def forecast(url):
             return json.loads(r.read() or b"null")
 
     dt, n, count = 8, 125, 0
+    RR_SCORE = {"n": 20, "model_ms": 14.0, "hold_ms": 16.5}       # as forecast_service.py's Overlay.rr_score()
     while True:
         try:
             on = post("/api/forecast/heartbeat", {
                 "state": "running", "detail": "demo", "device": "Polar H10 DEMO0001",
                 "overlays": {k: {"on": True, "model": f"demo {k}", "loaded": True, "error": None, "compute_ms": 40.0,
-                                 "forecasts": count, **({"beats": 30, "rr_score": {"mae": 14.0, "hold": 16.5, "n": 20}} if k == "rr" else {})}
+                                 "forecasts": count, **({"beats": 30, "rr_score": RR_SCORE} if k == "rr" else {})}
                              for k in ("ecg", "acc", "rr")}})
             t0 = now_ms() + dt
             count += 1
@@ -349,7 +350,7 @@ def forecast(url):
                                             "units": ["mV", "ms"], "last": [wave[0], rr], "median": [wave, [rr] * n], "rep": [wave, [rr] * n],
                                             "lo": [wave, [rr - 30] * n], "hi": [wave, [rr + 30] * n],
                                             "beats": [{"t": now_ms() + 600, "rr": rr + 8, "lo": rr - 25, "hi": rr + 40, "of": 8}],
-                                            "rr_score": {"mae": 14.0, "hold": 16.5, "n": 20}})
+                                            "rr_score": RR_SCORE})
         except OSError:
             pass                                                    # the server is starting or stopping
         time.sleep(0.5)

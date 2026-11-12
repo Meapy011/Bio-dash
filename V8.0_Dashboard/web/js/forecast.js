@@ -69,7 +69,7 @@ export class Forecasts {
     constructor({ monitor, acc, rr, buttons, status }) {
         Object.assign(this, { monitor, acc, rr, buttons, status });
         this.on = { ecg: false, acc: false, rr: false };
-        this.latest = {}; this.receivedAt = {}; this.service = null; this.available = false;
+        this.latest = {}; this.receivedAt = {}; this.every = {}; this.service = null; this.available = false;
         this.errors = { ecg: new ForecastErrors(['ecg_uv']), acc: new ForecastErrors(Object.values(ACC_LANES)) };
         this._clicks = KINDS.map(k => { const fn = () => this.toggle(k); buttons[k].addEventListener('click', fn); return [buttons[k], fn]; });
         this.refresh();
@@ -84,8 +84,10 @@ export class Forecasts {
     }
 
     async refresh() {
-        try { this._apply(await dapi('heart', '/api/forecast/settings', { quiet: true })); }
-        catch (e) { this.available = false; this._render(); }
+        let view;
+        try { view = await dapi('heart', '/api/forecast/settings', { quiet: true }); }
+        catch (e) { this.available = false; this._render(); return; }        // the Heart API isn't answering: no buttons
+        this._apply(view);
     }
 
     async toggle(kind) {
@@ -113,7 +115,12 @@ export class Forecasts {
         if (m.type === 'forecast_settings') return this._apply(m);
         const kind = (m.type || '').replace('_forecast', '');
         if (!KINDS.includes(kind) || !this.on[kind] || !m.lanes) return;
-        this.latest[kind] = m; this.receivedAt[kind] = Date.now();
+        const now = Date.now();
+        if (this.receivedAt[kind]) {                // how often this kind arrives (slow on a CPU, or with all three on)
+            const gap = now - this.receivedAt[kind];
+            this.every[kind] = this.every[kind] ? this.every[kind] * 0.7 + gap * 0.3 : gap;
+        }
+        this.latest[kind] = m; this.receivedAt[kind] = now;
         const times = [m.t0 - m.dt_ms, ...m.median[0].map((_, i) => m.t0 + i * m.dt_ms)];     // from the last real row, so it joins the trace
         const lane = (name, what) => { const i = m.lanes.indexOf(name); return i < 0 ? null : [m.last[i], ...m[what][i]]; };
         if (kind === 'ecg') {
@@ -136,15 +143,17 @@ export class Forecasts {
     onEcgRows(rows) { if (this.on.ecg) for (const r of rows) this.errors.ecg.observe(r[0], [r[1]]); }
     onAccRows(rows) { if (this.on.acc) for (const r of rows) this.errors.acc.observe(r[0], [r[1], r[2], r[3]]); }
 
-    _clear(kind) {
+    _clear(kind, forget = true) {             // forget: also how often it came (when switched off)
         delete this.latest[kind];
+        if (forget) { delete this.receivedAt[kind]; delete this.every[kind]; }
         if (kind === 'ecg') { this.errors.ecg.reset(); this.monitor.setForecast(null); }
         else if (kind === 'acc') { this.errors.acc.reset(); for (const a of 'xyz') this.acc.set('f' + a, [], { lo: [], hi: [] }); }
         else this.rr.set('next', [], { lo: [], hi: [] });
     }
 
     _tick() {
-        for (const k of KINDS) if (this.latest[k] && Date.now() - this.receivedAt[k] > 3000) this._clear(k);   // the service stopped
+        // the service stopped: nothing for 3 s, or for three of its usual gaps when it's slower than that
+        for (const k of KINDS) if (this.latest[k] && Date.now() - this.receivedAt[k] > Math.max(3000, 3 * (this.every[k] || 0))) this._clear(k, false);
         this._render();
     }
 
@@ -156,9 +165,9 @@ export class Forecasts {
         if (!p) return [svc.state === 'loading model' ? 'Loading the model…' : svc.state === 'waiting for data' ? 'Waiting for data' : 'Starting…', false, ''];
         const about = `${p.model}: ${p.samples} samples from ${p.context_rows} rows of context. A research demo, not a medical device.`;
         if (kind === 'rr') {
-            const sc = p.rr_score || ov.rr_score;
+            const sc = p.rr_score || ov.rr_score;                // forecast_service.py: {n, model_ms, hold_ms}
             return [`${(p.beats || []).length ? 'next beat ' + Math.round(p.beats[0].rr) + ' ms' : 'no beat within the horizon'}`
-                + (sc && sc.n ? ` · error ${sc.mae.toFixed(0)} ms (hold ${sc.hold.toFixed(0)})` : ''), false,
+                + (sc && sc.n && sc.model_ms != null ? ` · error ${Math.round(sc.model_ms)} ms (hold ${Math.round(sc.hold_ms)})` : ''), false,
                 `${about} Ring = the samples’ median R-R for the next beat, bar = their range; error = each beat against the last forecast made before it (hold = repeating the previous R-R).`];
         }
         let text = `${(p.median[0].length * p.dt_ms / 1000).toFixed(1)} s ahead · ${Math.round(p.compute_ms)} ms`;
@@ -176,7 +185,12 @@ export class Forecasts {
             const b = this.buttons[k], st = this.status[k];
             b.hidden = !this.available;
             b.setAttribute('aria-pressed', String(this.on[k]));
-            const [text, warn, title] = this.on[k] ? this._text(k) : ['', false, ''];
+            let text = '', warn = false, title = '';
+            // a forecast this page can't read must never take the buttons away (they'd be the only way to switch it off)
+            if (this.on[k]) {
+                try { [text, warn, title] = this._text(k); }
+                catch (e) { console.error(`forecast status (${k})`, e); text = 'Forecast on'; }
+            }
             st.textContent = text.length > 90 ? text.slice(0, 88) + '…' : text;
             st.title = title || text;
             st.classList.toggle('warn', warn);

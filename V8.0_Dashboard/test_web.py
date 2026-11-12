@@ -79,6 +79,11 @@ def main():
                                    " && document.querySelector('[data-fc-status=\"rr\"]').textContent.includes('next beat')", timeout=15000)
             check("Heart: three forecast overlays report", "ahead" in page.inner_text('[data-fc-status="acc"]')
                   and "next beat" in page.inner_text('[data-fc-status="rr"]'), page.inner_text('[data-fc-status="rr"]'))
+            page.wait_for_timeout(4500)                          # two of the page's settings refreshes
+            check("Heart: the Forecast buttons stay after switching on", page.eval_on_selector_all(
+                "[data-fc]", "bs => bs.every(b => !b.hidden && b.getAttribute('aria-pressed') === 'true')"))
+            check("Heart: the R-R forecast's error, from the service's fields", "error 14 ms (hold 17)" in page.inner_text('[data-fc-status="rr"]'),
+                  page.inner_text('[data-fc-status="rr"]'))
 
             go("oxygen", '[data-v="spo2"]')
             page.wait_for_function(f"({number})(document.querySelector('[data-v=\"spo2\"]'))", timeout=15000)
