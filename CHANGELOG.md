@@ -1,6 +1,6 @@
 # Changelog
 
-## V8.0 patch: a second person's strap shows up
+## V8.0 patch: a second person's strap shows up; smooth ECG on Compare
 
 - **Fixed:** with two people, the second person's Heart page could stay on "Looking…" for good while the strap was
   advertising (found on an Orin: the worker sat in its first search for two hours). Both workers had started at
@@ -15,6 +15,14 @@
   straps (`plan_radios`, tested in `test_radios.py`). Settings → Bluetooth radios warns when two straps share one.
 - **Finder:** a connected device's list says it's from before connecting (a connected worker doesn't search, so
   the list can be old), and "Not showing up?" mentions radios when several people are set up.
+- **Compare: the ECG strips wiggled.** Two causes: with more samples than pixels, the chart averaged them into
+  4 px columns measured from the moving right edge, so each frame grouped different samples and the R peaks
+  shrank and grew; and the right edge was "now", so the gap after the last burst from the strap (one every
+  ~0.5 s) grew and snapped shut. The strips now draw every sample (`raw`) and run 0.9 s behind the strap's own
+  clock (`x.follow`), as the Heart page's monitor does. Measured in the demo: the right edge moved 63 px and the
+  peaks 15 px between frames before; 1 px after.
+- **Charts:** where averaging is still used (motion, the forehead pulse), its columns are fixed in time, so a
+  scrolling chart no longer shimmers.
 - **Fixed:** the Heart and Air workers no longer spin flat out when a search fails (no Bluetooth): they wait 2 s.
 - **Tests:** `test_scan_hang.py` (a Bluetooth stack that never answers), `test_radios.py`, and `test_server.py`
   now has the second person's worker get stuck once and checks the server starts it again (70 checks).
