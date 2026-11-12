@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1120">
+    <title>Omni · Compare people</title>
+    <!-- Tailwind + themes.css: the shared parts (sidebar, debug panel); v6.css: the V6 design; omni.css: people -->
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <script src="/static/vendor/chart.min.js"></script>
+    <script src="/static/vendor/luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-adapter-luxon.min.js"></script>
+    <script src="/static/vendor/chartjs-plugin-streaming.min.js"></script>
+    <link rel="stylesheet" href="/static/css/themes.css">
+    <link rel="stylesheet" href="/static/css/v6.css">
+    <link rel="stylesheet" href="/static/css/omni.css">
+    <script src="/static/js/themes.js"></script>
+    <script src="/static/js/nicknames.js"></script>
+</head>
+<body class="v6">
+<main id="main" class="page" tabindex="-1">
+
+    <header class="page-head" style="--c:var(--brand-2)">
+        <div class="head-row">
+            <div class="titles">
+                <h1><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2.5-6 4 12 3-9 2 3H21"/></svg></span>Omni</h1>
+                <p class="sub">Compare up to 3 people, each with a Polar H10 and an O2 ring</p>
+            </div>
+            <div class="actions">
+                <span id="status" class="pill wait"><span class="dot wait"></span>Starting…</span>
+                <button id="add-person" class="btn" title="Add a person (up to 3: one H10 per radio)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></svg><span>Add person</span></button>
+                <button id="debug-btn" class="btn" title="Debug panel (D)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span>Radios</span></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Debug panel (the Radios button or "D") -->
+    <div id="debug-panel" class="hidden card" style="margin-bottom:16px">
+        <div class="card-head"><h2>Radios and links</h2><span class="spacer"></span>
+            <span class="card-sub">updated <span id="debug-updated" class="mono">—</span> · press <kbd class="mono">D</kbd> to close</span></div>
+        <div id="debug-body" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm"></div>
+    </div>
+
+    <div id="scanner-panel" class="card" style="margin-bottom:16px">
+        <div class="card-head">
+            <h2 class="scan-title"><span class="ping"><i></i><b></b></span>Devices nearby</h2>
+            <span id="scan-line" class="scan-line">Starting Bluetooth…</span>
+            <span class="spacer"></span>
+            <button id="find-btn" class="btn sm" title="Scan for the next minute, even on a radio a streaming H10 uses">Find devices</button>
+            <button id="scan-toggle" class="btn sm ghost" aria-expanded="true">Hide</button>
+        </div>
+        <div id="found" class="found"><div class="found-empty">Switch the H10s on (wet the strap) and the O2 rings on…</div></div>
+    </div>
+
+    <section class="card cmp" style="margin-bottom:16px" aria-labelledby="cmp-title">
+        <div class="card-head"><h2 id="cmp-title">Compare</h2><span class="card-sub">now, and the last 5 minutes</span>
+            <span class="spacer"></span><span id="cmp-legend" class="legend"></span></div>
+        <div class="cmp-wrap"><table id="cmp-table" class="cmp-table" style="margin-bottom:14px">
+            <thead><tr><th>Person</th><th>Heart rate (H10)</th><th>Heart rate (ring)</th><th>SpO₂</th><th>R-R</th><th>HRV (RMSSD)</th><th>SDNN</th></tr></thead>
+            <tbody></tbody></table></div>
+        <div class="grid cols-3">
+            <div><h3>Heart rate · H10 (bpm)</h3><div class="chart"><canvas id="cmp-hr"></canvas></div></div>
+            <div><h3>SpO₂ · O2 ring (%)</h3><div class="chart"><canvas id="cmp-spo2"></canvas></div></div>
+            <div><h3>HRV · RMSSD (ms)</h3><div class="chart"><canvas id="cmp-rmssd"></canvas></div></div>
+        </div>
+    </section>
+
+    <div id="people" class="people"></div>
+
+    <p class="foot-note">HRV is RMSSD and SDNN over each person's last 40 beats. Each person's recordings go to their own devices' folders (<span class="mono">Omni/&lt;device&gt;/&lt;date&gt;/</span>), with a <span class="mono">_person.json</span> saying whose they are. A research tool, not a diagnosis.</p>
+</main>
+
+    <script src="/static/js/ecg_monitor.js"></script>
+    <script src="/static/js/debug_panel.js"></script>
+    <script src="/static/js/sidebar.js"></script>
+    <script src="/static/js/omni_people.js"></script>
+    <script src="/static/js/v6.js"></script>
+</body>
+</html>

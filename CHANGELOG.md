@@ -1,5 +1,36 @@
 # Changelog
 
+## V7.0
+
+**Omni compares people:** up to 3 at once, each with a Polar H10 and an O2 ring, on one page.
+
+- **People.** Your V6 H10 and O2 ring become **Person 1** on the first start (from `last_device_*.json` and the
+  Polar's radio pin), so one person carries on as before. **Add person** (up to 3), rename in place, reorder,
+  **Remove** (two clicks; disconnects their devices). Saved in `Omni-dashboard/people.json`, which the updater
+  carries to new versions like the other settings.
+- **Devices nearby:** the H10s and O2 rings Omni hears, unassigned first (assigned ones folded away), each with
+  **Give to <person>** / **New person** / **Move to**. A device belongs to one person; handing it over
+  disconnects it from the first and connects it for the second (quick retries while it lets go). Each person's
+  devices have **Disconnect** / **Connect** (auto-reconnect off / on) and **Forget**, and reconnect by themselves
+  when back in range.
+- **Compare:** a table of everyone's latest H10 heart rate, ring heart rate, SpO₂, R-R, RMSSD and SDNN, and shared
+  5-minute charts of heart rate (H10), SpO₂ and HRV (RMSSD), one line per person: a colour **and** a line style
+  each (solid, dashed, dotted), pre-filled from their recordings.
+- **A card per person:** the six tiles, a live ECG sweep, R-R per beat and motion.
+- **Radios:** each H10 gets a radio of its own (external first, in people order; more H10s than radios share, and
+  the Radios panel warns); O2 rings take a radio no H10 uses, else their person's; scanning avoids H10 radios, and
+  on a streaming H10's radio sweeps only while something is missing or after **Find devices** (at most every
+  15 s). A radio pin per person in the Radios panel (**D**), saved by adapter address.
+- **Recordings** unchanged: per device under `Omni/<device>/<date>/`, now with `<time>_person.json` saying whose
+  session it was. The night report and the analysis dashboard read them as before.
+- **API:** `/api/people` (GET, POST add), `/api/people/<id>` (POST name / colour / radio / move, DELETE),
+  `/api/people/<id>/device` (assign, connect, disconnect, forget), `/api/scan`; `/api/stream` sends
+  `{"people": {id: {polar, viatom}}}`; `/api/history` and `/api/radios` take a person. V6's `/api/connect` and
+  `/api/scanners` still work (first person).
+- **Test without hardware:** `OMNI_FAKE=1 python3 omni.py` (three stand-in H10s, O2 rings and radios,
+  `fake_omni.py`); `test_omni.py` runs three people end to end, page included (37 checks).
+- Omni's classic ECG view and tap-a-tile trends are gone (the per-person sweep and the shared charts replace them).
+
 ## V6.3
 
 V6.2 plus a third live forecast: **R-R**, from the ECG + R-R model (the R-R plan v2 proof of concept,
